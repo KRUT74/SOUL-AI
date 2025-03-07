@@ -4,7 +4,7 @@ import { Mic, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface VoiceControlsProps {
-  onVoiceInput: (text: string) => void;
+  onVoiceInput?: (text: string) => void;
   textToSpeak?: string;
   disabled?: boolean;
 }
@@ -28,7 +28,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
 
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
-          onVoiceInput(transcript);
+          onVoiceInput?.(transcript);
           setIsListening(false);
         };
 
@@ -49,17 +49,32 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         setRecognition(recognition);
       }
 
-      // Initialize preferred voice
+      // Initialize preferred voice with more aggressive male voice selection
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
-        // Try to find a male English voice
+
+        // Try multiple patterns to find a male voice
         const maleVoice = voices.find(voice => 
-          voice.lang.startsWith('en') && 
-          voice.name.toLowerCase().includes('male')
+          voice.lang.startsWith('en') && (
+            voice.name.toLowerCase().includes('male') ||
+            voice.name.toLowerCase().includes('david') ||
+            voice.name.toLowerCase().includes('james') ||
+            voice.name.toLowerCase().includes('john') ||
+            voice.name.toLowerCase().includes('guy')
+          )
         );
-        setPreferredVoice(maleVoice || voices[0]);
+
+        if (maleVoice) {
+          console.log('Selected male voice:', maleVoice.name);
+          setPreferredVoice(maleVoice);
+        } else {
+          // Fallback to first English voice if no male voice found
+          const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+          setPreferredVoice(englishVoice || voices[0]);
+        }
       };
 
+      // Ensure voices are loaded
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
       }
@@ -95,7 +110,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         return;
       }
 
-      // Cancel any ongoing speech
+      // Ensure any ongoing speech is cancelled
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -108,7 +123,12 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       utterance.pitch = 1.0; // Natural pitch
       utterance.volume = 1.0;
 
-      utterance.onend = () => setIsSpeaking(false);
+      // Handle speech events
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        window.speechSynthesis.cancel(); // Ensure cleanup
+      };
+
       utterance.onerror = () => {
         setIsSpeaking(false);
         toast({
@@ -118,8 +138,23 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         });
       };
 
+      // Start speaking
       setIsSpeaking(true);
       window.speechSynthesis.speak(utterance);
+
+      // Workaround for Chrome issue where speech can get cut off
+      const restartSpeechIfNeeded = () => {
+        if (isSpeaking && window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      };
+
+      // Check every second if speech needs to be resumed
+      const interval = setInterval(restartSpeechIfNeeded, 1000);
+      utterance.onend = () => {
+        clearInterval(interval);
+        setIsSpeaking(false);
+      };
     } else {
       toast({
         title: "Error",
@@ -131,14 +166,16 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
 
   return (
     <div className="flex gap-2">
-      <Button
-        onClick={toggleListening}
-        disabled={disabled}
-        variant={isListening ? "destructive" : "secondary"}
-        size="icon"
-      >
-        <Mic className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
-      </Button>
+      {onVoiceInput && (
+        <Button
+          onClick={toggleListening}
+          disabled={disabled}
+          variant={isListening ? "destructive" : "secondary"}
+          size="icon"
+        >
+          <Mic className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
+        </Button>
+      )}
       {textToSpeak && (
         <Button
           onClick={speak}
