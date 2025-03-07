@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
-import { companionSettings, type CompanionSettings } from "@shared/schema";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,9 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Home } from "lucide-react";
 import React from 'react';
-import { Slider } from "@/components/ui/slider";
+import { companionSettings, type CompanionSettings } from "@shared/schema";
 
 export default function Settings() {
   const [_, setLocation] = useLocation();
@@ -31,7 +30,6 @@ export default function Settings() {
       name: "",
       personality: "",
       interests: [],
-      temperature: 50, //Added default value for temperature
     },
   });
 
@@ -85,14 +83,24 @@ export default function Settings() {
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
       <div className="container max-w-2xl py-10">
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/chat")}
-            className="text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/home")}
+              className="text-white hover:bg-white/20"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/chat")}
+              className="text-white hover:bg-white/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold text-white">
             {existingPreferences?.settings ? "Update" : "Configure"} Your AI Companion
           </h1>
@@ -153,38 +161,6 @@ export default function Settings() {
                     </FormControl>
                     <FormDescription className="text-white/70">
                       What topics should your companion be knowledgeable about?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="temperature"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Response Variability</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Slider
-                          {...field}
-                          value={[value ?? 50]}
-                          onValueChange={(vals) => onChange(vals[0])}
-                          min={0}
-                          max={100}
-                          step={1}
-                          className="py-2"
-                        />
-                        <div className="flex justify-between text-sm text-white/70">
-                          <span>Consistent</span>
-                          <span>{value}%</span>
-                          <span>Creative</span>
-                        </div>
-                      </div>
-                    </FormControl>
-                    <FormDescription className="text-white/70">
-                      Adjust how varied and creative the AI's responses will be
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
