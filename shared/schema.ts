@@ -6,7 +6,7 @@ import { relations } from "drizzle-orm";
 // Define user schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
+  username: varchar("username", { length: 50 }).notNull(),  
   password: text("password").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
