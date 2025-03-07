@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, bigint, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   role: text("role").notNull(), // 'user' or 'assistant'
-  timestamp: integer("timestamp").notNull(),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(), // Properly configured bigint
 });
 
 // Define user preferences

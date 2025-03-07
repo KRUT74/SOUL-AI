@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = insertMessageSchema.parse({
         content: req.body.content,
         role: "user",
-        timestamp: Date.now(),
+        timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
       });
 
       const savedMessage = await storage.addMessage(message);
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assistantMessage = await storage.addMessage({
         content: aiResponse,
         role: "assistant",
-        timestamp: Date.now(),
+        timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
       });
 
       res.json(savedMessage);

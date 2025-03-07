@@ -22,37 +22,21 @@ export async function generateResponse(
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 1024,
       messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: systemPrompt
-            }
-          ]
-        },
+        { role: 'assistant', content: systemPrompt },
         ...context.map((msg, i) => ({
           role: i % 2 === 0 ? 'user' : 'assistant',
-          content: [
-            {
-              type: 'text',
-              text: msg
-            }
-          ]
+          content: msg
         })),
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: message
-            }
-          ]
-        }
-      ]
+        { role: 'user', content: message }
+      ],
+      system: systemPrompt
     });
 
-    return response.content[0].text;
+    // Access the text content from the response
+    if (response.content[0].type === 'text') {
+      return response.content[0].text;
+    }
+    throw new Error('Unexpected response format from Anthropic API');
   } catch (error) {
     console.error('Error generating response:', error);
     throw new Error('Failed to generate AI response');
