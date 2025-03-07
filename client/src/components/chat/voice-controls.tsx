@@ -7,9 +7,10 @@ interface VoiceControlsProps {
   onVoiceInput?: (text: string) => void;
   textToSpeak?: string;
   disabled?: boolean;
+  voiceType?: "male" | "female";
 }
 
-export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceControlsProps) {
+export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType = "male" }: VoiceControlsProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const { toast } = useToast();
@@ -24,7 +25,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-GB'; // Set to British English
+        recognition.lang = 'en-GB';
 
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
@@ -49,71 +50,29 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         setRecognition(recognition);
       }
 
-      // Enhanced voice selection with British voices prioritization
+      // Enhanced voice selection with gender preference
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // First try to find British English voices
-        const britishVoice = voices.find(voice =>
-          voice.lang.startsWith('en-GB') && (
-            // British voice identifiers
-            voice.name.toLowerCase().includes('male') ||
-            voice.name.toLowerCase().includes('british') ||
-            voice.name.toLowerCase().includes('uk') ||
-            // Common British names
-            voice.name.toLowerCase().includes('arthur') ||
-            voice.name.toLowerCase().includes('charles') ||
-            voice.name.toLowerCase().includes('george') ||
-            voice.name.toLowerCase().includes('harry') ||
-            voice.name.toLowerCase().includes('james') ||
-            voice.name.toLowerCase().includes('william') ||
-            // British regional indicators
-            voice.name.toLowerCase().includes('london') ||
-            voice.name.toLowerCase().includes('england') ||
-            // General British indicators
-            (voice.name.toLowerCase().includes('male') && voice.lang === 'en-GB')
-          )
-        );
+        // Filter voices based on voiceType
+        const targetVoices = voices.filter(voice => {
+          const isEnglish = voice.lang.startsWith('en');
+          const voiceName = voice.name.toLowerCase();
+          const isMale = voiceName.includes('male') || voiceName.includes('guy') || voiceName.includes('james');
+          const isFemale = voiceName.includes('female') || voiceName.includes('woman') || voiceName.includes('girl');
 
-        if (britishVoice) {
-          console.log('Selected British voice:', britishVoice.name);
-          setPreferredVoice(britishVoice);
-        } else {
-          console.log("No suitable British voice found, falling back to general English voices");
-          // Fallback to any English male voice
-          const englishVoice = voices.find(voice => 
-            voice.lang.startsWith('en') && 
-            voice.name.toLowerCase().includes('male')
-          );
-          if (englishVoice) {
-            console.log('Selected English voice:', englishVoice.name);
-            setPreferredVoice(englishVoice);
+          if (voiceType === "male") {
+            return isEnglish && isMale;
           } else {
-            // Final fallback to any English voice
-            const anyEnglishVoice = voices.find(voice => voice.lang.startsWith('en'));
-            setPreferredVoice(anyEnglishVoice || voices[0]);
+            return isEnglish && isFemale;
           }
-        }
+        });
 
-        // Log available English voices for selection
-        console.log("\nAvailable English Voices:");
-        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
-
-        console.log("\nBritish Voices:");
-        englishVoices
-          .filter(voice => voice.lang === 'en-GB')
-          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
-
-        console.log("\nAmerican Voices:");
-        englishVoices
-          .filter(voice => voice.lang === 'en-US')
-          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
-
-        console.log("\nOther English Voices:");
-        englishVoices
-          .filter(voice => !['en-GB', 'en-US'].includes(voice.lang))
-          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
+        // Select the first matching voice or fall back to any English voice
+        const selectedVoice = targetVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
+        console.log(`Selected ${voiceType} voice:`, selectedVoice?.name);
+        setPreferredVoice(selectedVoice || null);
       };
 
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -121,7 +80,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       }
       loadVoices();
     }
-  }, [onVoiceInput, toast]);
+  }, [onVoiceInput, toast, voiceType]);
 
   const toggleListening = () => {
     if (!recognition) {
@@ -151,55 +110,43 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         return;
       }
 
-      // Ensure any ongoing speech is cancelled
       window.speechSynthesis.cancel();
 
-      // Split text into smaller chunks at sentence boundaries
-      const chunks = textToSpeak.match(/[^.!?]+[.!?]+/g) || [textToSpeak];
-      let currentChunkIndex = 0;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-      const speakNextChunk = () => {
-        if (currentChunkIndex < chunks.length) {
-          const chunk = chunks[currentChunkIndex];
-          const utterance = new SpeechSynthesisUtterance(chunk);
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
 
-          // Configure speech parameters for a more distinct British voice
-          if (preferredVoice) {
-            utterance.voice = preferredVoice;
-          }
-          // Adjusted voice parameters for British character
-          utterance.rate = 0.80;  // Slower rate for more natural speech
-          utterance.pitch = 1.0; // Neutral pitch for more natural sound
-          utterance.volume = 1.0;
+      // Adjust voice characteristics based on gender
+      if (voiceType === "male") {
+        utterance.pitch = 0.9;
+        utterance.rate = 0.9;
+      } else {
+        utterance.pitch = 1.1;
+        utterance.rate = 1.0;
+      }
 
-          utterance.onend = () => {
-            currentChunkIndex++;
-            if (currentChunkIndex < chunks.length) {
-              // Longer pause between sentences for more natural rhythm
-              setTimeout(speakNextChunk, 500);
-            } else {
-              setIsSpeaking(false);
-              window.speechSynthesis.cancel(); // Final cleanup
-            }
-          };
+      utterance.volume = 1.0;
 
-          utterance.onerror = () => {
-            setIsSpeaking(false);
-            toast({
-              title: "Error",
-              description: "Failed to speak the text. Please try again.",
-              variant: "destructive"
-            });
-          };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        window.speechSynthesis.cancel();
+      };
 
-          window.speechSynthesis.speak(utterance);
-        }
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        toast({
+          title: "Error",
+          description: "Failed to speak the text. Please try again.",
+          variant: "destructive"
+        });
       };
 
       setIsSpeaking(true);
-      speakNextChunk();
+      window.speechSynthesis.speak(utterance);
 
-      // Keep speech synthesis active with longer keep-alive interval
+      // Keep speech synthesis active
       const keepAlive = setInterval(() => {
         if (isSpeaking) {
           window.speechSynthesis.pause();
@@ -209,7 +156,6 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         }
       }, 5000);
 
-      // Cleanup interval when speech ends
       return () => clearInterval(keepAlive);
     } else {
       toast({
