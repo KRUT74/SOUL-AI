@@ -1,4 +1,7 @@
-import { Message, InsertMessage, Preferences, InsertPreferences, CompanionSettings } from "@shared/schema";
+import { Message, InsertMessage, Preferences, InsertPreferences } from "@shared/schema";
+import { messages, preferences } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getMessages(): Promise<Message[]>;
@@ -7,38 +10,27 @@ export interface IStorage {
   setPreferences(prefs: InsertPreferences): Promise<Preferences>;
 }
 
-export class MemStorage implements IStorage {
-  private messages: Map<number, Message>;
-  private preferences: Preferences | undefined;
-  private currentMessageId: number;
-  private currentPrefsId: number;
-
-  constructor() {
-    this.messages = new Map();
-    this.currentMessageId = 1;
-    this.currentPrefsId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getMessages(): Promise<Message[]> {
-    return Array.from(this.messages.values());
+    return await db.select().from(messages);
   }
 
   async addMessage(message: InsertMessage): Promise<Message> {
-    const id = this.currentMessageId++;
-    const newMessage: Message = { ...message, id };
-    this.messages.set(id, newMessage);
+    const [newMessage] = await db.insert(messages).values(message).returning();
     return newMessage;
   }
 
   async getPreferences(): Promise<Preferences | undefined> {
-    return this.preferences;
+    const [prefs] = await db.select().from(preferences);
+    return prefs;
   }
 
   async setPreferences(prefs: InsertPreferences): Promise<Preferences> {
-    const id = this.currentPrefsId;
-    this.preferences = { ...prefs, id };
-    return this.preferences;
+    // Delete existing preferences first since we only want one record
+    await db.delete(preferences);
+    const [newPrefs] = await db.insert(preferences).values(prefs).returning();
+    return newPrefs;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
