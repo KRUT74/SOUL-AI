@@ -84,7 +84,6 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType =
           }
         });
 
-        // Log matching voices for debugging
         console.log(`Found ${targetVoices.length} matching ${voiceType} voices:`, 
           targetVoices.map(v => v.name));
 
@@ -136,39 +135,54 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType =
 
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      // Split text into manageable chunks at sentence boundaries
+      const sentences = textToSpeak.match(/[^.!?]+[.!?]+/g) || [textToSpeak];
+      let currentIndex = 0;
 
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
+      const speakNextSentence = () => {
+        if (currentIndex < sentences.length && isSpeaking) {
+          const utterance = new SpeechSynthesisUtterance(sentences[currentIndex]);
 
-      // Adjust voice characteristics based on gender
-      if (voiceType === "male") {
-        utterance.pitch = 0.8;  // Lower pitch for male voice
-        utterance.rate = 0.9;
-      } else {
-        utterance.pitch = 1.1;
-        utterance.rate = 1.0;
-      }
+          if (preferredVoice) {
+            utterance.voice = preferredVoice;
+          }
 
-      utterance.volume = 1.0;
+          // Adjust voice characteristics based on gender
+          if (voiceType === "male") {
+            utterance.pitch = 0.8;  // Lower pitch for male voice
+            utterance.rate = 0.9;
+          } else {
+            utterance.pitch = 1.1;
+            utterance.rate = 1.0;
+          }
 
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        window.speechSynthesis.cancel();
-      };
+          utterance.volume = 1.0;
 
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        toast({
-          title: "Error",
-          description: "Failed to speak the text. Please try again.",
-          variant: "destructive"
-        });
+          utterance.onend = () => {
+            currentIndex++;
+            if (currentIndex < sentences.length && isSpeaking) {
+              // Add a small pause between sentences
+              setTimeout(speakNextSentence, 300);
+            } else {
+              setIsSpeaking(false);
+            }
+          };
+
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            toast({
+              title: "Error",
+              description: "Failed to speak the text. Please try again.",
+              variant: "destructive"
+            });
+          };
+
+          window.speechSynthesis.speak(utterance);
+        }
       };
 
       setIsSpeaking(true);
-      window.speechSynthesis.speak(utterance);
+      speakNextSentence();
 
       // Keep speech synthesis active
       const keepAlive = setInterval(() => {
@@ -180,7 +194,11 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType =
         }
       }, 5000);
 
-      return () => clearInterval(keepAlive);
+      return () => {
+        clearInterval(keepAlive);
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      };
     } else {
       toast({
         title: "Error",
