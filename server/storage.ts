@@ -111,11 +111,15 @@ class DatabaseStorage implements IStorage {
   }
 
   async getMessages(userId: number): Promise<Message[]> {
+    console.log(`Querying messages for user ID: ${userId}`);
+    
     const dbMessages = await db.query.messages.findMany({
       where: eq(messages.userId, userId),
       orderBy: (messages, { asc }) => [asc(messages.timestamp)],
     });
 
+    console.log(`Found ${dbMessages.length} messages for user ID: ${userId}`);
+    
     return dbMessages.map(msg => ({
       id: msg.id,
       content: msg.content,

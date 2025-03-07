@@ -17,7 +17,10 @@ export default function Chat() {
   const { toast } = useToast();
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: ["/api/messages"]
+    queryKey: ["/api/messages"],
+    // Ensure messages are always fresh when component mounts
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { data: preferences, isLoading: preferencesLoading } = useQuery<Preferences>({

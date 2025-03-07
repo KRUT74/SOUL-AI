@@ -17,7 +17,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
+      // Get messages for the current logged-in user only
       const messages = await storage.getMessages(req.session.userId);
+      
+      console.log(`Fetching messages for user ID: ${req.session.userId}, found ${messages.length} messages`);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
