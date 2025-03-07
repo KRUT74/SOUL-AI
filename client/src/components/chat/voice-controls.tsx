@@ -52,15 +52,19 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       // Initialize preferred voice with more aggressive male voice selection
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
+        console.log("Available voices:", voices); //Added for debugging
 
         // Try multiple patterns to find a male voice
-        const maleVoice = voices.find(voice => 
+        const maleVoice = voices.find(voice =>
           voice.lang.startsWith('en') && (
             voice.name.toLowerCase().includes('male') ||
             voice.name.toLowerCase().includes('david') ||
             voice.name.toLowerCase().includes('james') ||
             voice.name.toLowerCase().includes('john') ||
-            voice.name.toLowerCase().includes('guy')
+            voice.name.toLowerCase().includes('guy') ||
+            voice.name.toLowerCase().includes('mike') || //Added for more aggressive search
+            voice.name.toLowerCase().includes('tom') || //Added for more aggressive search
+            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male') //Added for regional variation
           )
         );
 
@@ -68,6 +72,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
           console.log('Selected male voice:', maleVoice.name);
           setPreferredVoice(maleVoice);
         } else {
+          console.log("No suitable male voice found."); //Added for debugging
           // Fallback to first English voice if no male voice found
           const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
           setPreferredVoice(englishVoice || voices[0]);
