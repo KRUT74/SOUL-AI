@@ -4,7 +4,7 @@ import {
   User, InsertUser,
   messages, companions, users 
 } from "@shared/schema";
-import { db } from "./db";
+import { db, sql } from "./db";
 import { eq } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -37,6 +37,16 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async createUser(user: InsertUser): Promise<User> {
     try {
+      // Check for existing user case-insensitively
+      const existingUser = await db.select()
+        .from(users)
+        .where(sql`LOWER(username) = LOWER(${user.username})`)
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        throw new Error("Username already exists");
+      }
+
       const hashedPassword = await hashPassword(user.password);
       const [newUser] = await db.insert(users)
         .values({
@@ -57,7 +67,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    // Case-insensitive username lookup
+    const [user] = await db.select()
+      .from(users)
+      .where(sql`LOWER(username) = LOWER(${username})`);
     return user;
   }
 
