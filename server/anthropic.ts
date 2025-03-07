@@ -22,13 +22,34 @@ export async function generateResponse(
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 1024,
       messages: [
-        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: systemPrompt
+            }
+          ]
+        },
         ...context.map((msg, i) => ({
           role: i % 2 === 0 ? 'user' : 'assistant',
-          content: msg,
+          content: [
+            {
+              type: 'text',
+              text: msg
+            }
+          ]
         })),
-        { role: 'user', content: message },
-      ],
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: message
+            }
+          ]
+        }
+      ]
     });
 
     return response.content[0].text;

@@ -8,26 +8,38 @@ import { TypingIndicator } from "@/components/chat/typing-indicator";
 import { Button } from "@/components/ui/button";
 import { Settings, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Chat() {
   const [_, setLocation] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: ["/api/messages"],
+    queryKey: ["/api/messages"]
   });
 
   const { data: preferences, isLoading: preferencesLoading } = useQuery({
-    queryKey: ["/api/preferences"],
+    queryKey: ["/api/preferences"]
   });
 
   const messageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest("POST", "/api/messages", { content });
+      const response = await apiRequest("POST", "/api/messages", { content });
+      const data = await response.json();
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+      console.error("Message error:", error);
+    }
   });
 
   useEffect(() => {
@@ -61,7 +73,7 @@ export default function Chat() {
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
-          {messages.map((message: Message) => (
+          {messages.map((message) => (
             <MessageBubble
               key={message.id}
               content={message.content}
