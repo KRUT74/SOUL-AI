@@ -36,14 +36,19 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async createUser(user: InsertUser): Promise<User> {
-    const hashedPassword = await hashPassword(user.password);
-    const [newUser] = await db.insert(users)
-      .values({
-        ...user,
-        password: hashedPassword,
-      })
-      .returning();
-    return newUser;
+    try {
+      const hashedPassword = await hashPassword(user.password);
+      const [newUser] = await db.insert(users)
+        .values({
+          ...user,
+          password: hashedPassword,
+        })
+        .returning();
+      return newUser;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
