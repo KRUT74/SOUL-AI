@@ -1,20 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Landing() {
   const [_, setLocation] = useLocation();
-  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
-
-  // Redirect to auth page after animation completes
-  useEffect(() => {
-    if (isAnimationComplete) {
-      const timer = setTimeout(() => {
-        setLocation("/auth");
-      }, 500); // Wait half a second after animation before redirecting
-      return () => clearTimeout(timer);
-    }
-  }, [isAnimationComplete, setLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center">
@@ -24,7 +13,7 @@ export default function Landing() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
           className="text-center"
-          onClick={() => setIsAnimationComplete(true)}
+          onClick={() => setLocation("/auth")}
         >
           <motion.h1 
             className="text-6xl md:text-8xl font-bold text-white tracking-widest cursor-pointer hover:scale-105 transition-transform"
