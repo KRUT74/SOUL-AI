@@ -24,7 +24,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US';
+        recognition.lang = 'en-GB'; // Set to British English
 
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
@@ -49,37 +49,38 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         setRecognition(recognition);
       }
 
-      // Enhanced voice selection with US voices prioritization
+      // Enhanced voice selection with British voices prioritization
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // First try to find American English male voices
-        const americanVoice = voices.find(voice =>
-          voice.lang.startsWith('en-US') && (
-            // American voice identifiers
-            voice.name.toLowerCase().includes('guy') ||
-            voice.name.toLowerCase().includes('mike') ||
-            voice.name.toLowerCase().includes('josh') ||
-            voice.name.toLowerCase().includes('reed') ||
-            voice.name.toLowerCase().includes('tom') ||
-            voice.name.toLowerCase().includes('american') ||
-            voice.name.toLowerCase().includes('us male') ||
-            // Common American names
-            voice.name.toLowerCase().includes('alex') ||
-            voice.name.toLowerCase().includes('chris') ||
-            voice.name.toLowerCase().includes('john') ||
-            voice.name.toLowerCase().includes('matthew') ||
-            // General male indicators for US voices
-            (voice.name.toLowerCase().includes('male') && voice.lang === 'en-US')
+        // First try to find British English male voices
+        const britishVoice = voices.find(voice =>
+          voice.lang.startsWith('en-GB') && (
+            // British voice identifiers
+            voice.name.toLowerCase().includes('male') ||
+            voice.name.toLowerCase().includes('british') ||
+            voice.name.toLowerCase().includes('uk') ||
+            // Common British names
+            voice.name.toLowerCase().includes('arthur') ||
+            voice.name.toLowerCase().includes('charles') ||
+            voice.name.toLowerCase().includes('george') ||
+            voice.name.toLowerCase().includes('harry') ||
+            voice.name.toLowerCase().includes('james') ||
+            voice.name.toLowerCase().includes('william') ||
+            // British regional indicators
+            voice.name.toLowerCase().includes('london') ||
+            voice.name.toLowerCase().includes('england') ||
+            // General British indicators
+            (voice.name.toLowerCase().includes('male') && voice.lang === 'en-GB')
           )
         );
 
-        if (americanVoice) {
-          console.log('Selected American voice:', americanVoice.name);
-          setPreferredVoice(americanVoice);
+        if (britishVoice) {
+          console.log('Selected British voice:', britishVoice.name);
+          setPreferredVoice(britishVoice);
         } else {
-          console.log("No suitable American voice found, falling back to general English voices");
+          console.log("No suitable British voice found, falling back to general English voices");
           // Fallback to any English male voice
           const englishVoice = voices.find(voice => 
             voice.lang.startsWith('en') && 
@@ -143,13 +144,13 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
           const chunk = chunks[currentChunkIndex];
           const utterance = new SpeechSynthesisUtterance(chunk);
 
-          // Configure speech parameters for a more distinct voice
+          // Configure speech parameters for a more distinct British voice
           if (preferredVoice) {
             utterance.voice = preferredVoice;
           }
-          // Adjusted voice parameters for more character
-          utterance.rate = 0.85;  // Slightly slower for gravitas
-          utterance.pitch = 0.95; // Slightly deeper voice
+          // Adjusted voice parameters for British character
+          utterance.rate = 0.90;  // Slightly slower for clarity
+          utterance.pitch = 1.05; // Slightly higher pitch for British accent
           utterance.volume = 1.0;
 
           utterance.onend = () => {
