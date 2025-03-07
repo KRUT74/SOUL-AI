@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { setupAuth } from "./auth";
 import { setupVite } from "./vite";
 import { createServer } from "http";
+import { registerRoutes } from "./routes";
 
 console.log("Starting server initialization...");
 
@@ -36,13 +37,17 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // Setup minimal auth routes
 setupAuth(app);
 
+// Create HTTP server
 const server = createServer(app);
 
-// Setup Vite for development
-setupVite(app, server);
+// Register API routes
+registerRoutes(app).then(() => {
+  // Setup Vite for development
+  setupVite(app, server);
 
-// Start server
-const port = 5000;
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Server started and listening on port ${port}`);
+  // Start server
+  const port = 5000;
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Server started and listening on port ${port}`);
+  });
 });

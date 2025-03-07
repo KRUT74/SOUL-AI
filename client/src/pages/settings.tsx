@@ -25,19 +25,28 @@ export default function Settings() {
 
   const mutation = useMutation({
     mutationFn: async (data: CompanionSettings) => {
-      await apiRequest("POST", "/api/preferences", data);
+      console.log('Submitting companion settings:', data);
+      const res = await apiRequest("POST", "/api/preferences", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to save settings");
+      }
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Successfully saved companion settings:', data);
       toast({
         title: "Settings saved",
         description: "Your AI companion has been configured",
       });
+      console.log('Redirecting to /chat...');
       setLocation("/chat");
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Failed to save companion settings:', error);
       toast({
         title: "Error",
-        description: "Failed to save settings",
+        description: error.message,
         variant: "destructive",
       });
     },
