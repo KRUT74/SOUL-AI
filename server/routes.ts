@@ -1,15 +1,23 @@
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateResponse } from "./anthropic";
 import { companionSettings, insertMessageSchema } from "@shared/schema";
-import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get chat messages
   app.get("/api/messages", async (req, res) => {
     try {
-      const messages = await storage.getMessages();
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const messages = await storage.getMessages(req.session.userId);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -20,20 +28,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send message and get AI response
   app.post("/api/messages", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const message = insertMessageSchema.parse({
         content: req.body.content,
         role: "user",
         timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
       });
 
-      const savedMessage = await storage.addMessage(message);
+      const savedMessage = await storage.addMessage(req.session.userId, message);
 
-      const prefs = await storage.getPreferences();
+      const prefs = await storage.getPreferences(req.session.userId);
       if (!prefs) {
         throw new Error("Companion not configured");
       }
 
-      const messages = await storage.getMessages();
+      const messages = await storage.getMessages(req.session.userId);
       const context = messages.slice(-6).map(m => m.content);
 
       const aiResponse = await generateResponse(
@@ -42,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         context
       );
 
-      const assistantMessage = await storage.addMessage({
+      const assistantMessage = await storage.addMessage(req.session.userId, {
         content: aiResponse,
         role: "assistant",
         timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
@@ -51,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(savedMessage);
     } catch (error) {
       console.error("Error processing message:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to process message",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -61,7 +73,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get companion preferences
   app.get("/api/preferences", async (req, res) => {
     try {
-      const prefs = await storage.getPreferences();
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const prefs = await storage.getPreferences(req.session.userId);
       res.json(prefs);
     } catch (error) {
       console.error("Error fetching preferences:", error);
@@ -72,13 +87,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update companion preferences
   app.post("/api/preferences", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const settings = companionSettings.parse(req.body);
-      const prefs = await storage.setPreferences({ settings });
+      const prefs = await storage.setPreferences(req.session.userId, { settings });
       console.log("Saved companion preferences:", prefs);
       res.json(prefs);
     } catch (error) {
       console.error("Error updating preferences:", error);
-      res.status(500).json({ message: "Failed to update preferences" });
+      res.status(500).json({
+        message: "Failed to update preferences",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
