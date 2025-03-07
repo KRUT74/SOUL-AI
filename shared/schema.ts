@@ -18,7 +18,6 @@ export const companions = pgTable('companions', {
   personality: text('personality').notNull(),
   interests: text('interests').array().notNull(),
   avatar: text('avatar'),
-  temperature: integer('temperature').default(50).notNull(),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -44,7 +43,6 @@ export const companionSettings = z.object({
   personality: z.string().min(1, "Personality description is required"),
   interests: z.array(z.string()),
   avatar: z.string().optional(),
-  temperature: z.number().min(0).max(100).default(50),
 });
 
 export const insertMessageSchema = z.object({

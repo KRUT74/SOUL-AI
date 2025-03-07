@@ -18,14 +18,10 @@ export async function generateResponse(
       ', '
     )}. Maintain this personality and knowledge of these interests throughout the conversation.`;
 
-    // Convert temperature from 0-100 scale to 0-1 scale for the API
-    const temperature = (settings.temperature ?? 50) / 100;
-
     type MessageRole = 'user' | 'assistant';
     const response = await anthropic.messages.create({
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 1024,
-      temperature,
       messages: [
         { role: 'assistant' as MessageRole, content: systemPrompt },
         ...context.map((msg, i) => ({
