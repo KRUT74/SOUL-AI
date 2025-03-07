@@ -49,22 +49,30 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         setRecognition(recognition);
       }
 
-      // Initialize preferred voice with more aggressive male voice selection
+      // Enhanced voice selection with more criteria and logging
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // Try multiple patterns to find a male voice
+        // Expanded voice search criteria
         const maleVoice = voices.find(voice =>
           voice.lang.startsWith('en') && (
+            // Standard male voice identifiers
             voice.name.toLowerCase().includes('male') ||
+            // Common male names
             voice.name.toLowerCase().includes('david') ||
             voice.name.toLowerCase().includes('james') ||
             voice.name.toLowerCase().includes('john') ||
             voice.name.toLowerCase().includes('guy') ||
             voice.name.toLowerCase().includes('mike') ||
             voice.name.toLowerCase().includes('tom') ||
-            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male')
+            // Additional male voice identifiers
+            voice.name.toLowerCase().includes('bruce') ||
+            voice.name.toLowerCase().includes('daniel') ||
+            voice.name.toLowerCase().includes('peter') ||
+            // Regional variations
+            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male') ||
+            voice.name.toLowerCase().includes('en-us') && voice.name.toLowerCase().includes('male')
           )
         );
 
@@ -125,12 +133,13 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
           const chunk = chunks[currentChunkIndex];
           const utterance = new SpeechSynthesisUtterance(chunk);
 
-          // Configure speech parameters
+          // Configure speech parameters for a more distinct voice
           if (preferredVoice) {
             utterance.voice = preferredVoice;
           }
-          utterance.rate = 0.9;
-          utterance.pitch = 1.0;
+          // Adjusted voice parameters for more character
+          utterance.rate = 0.85;  // Slightly slower for gravitas
+          utterance.pitch = 0.95; // Slightly deeper voice
           utterance.volume = 1.0;
 
           utterance.onend = () => {
