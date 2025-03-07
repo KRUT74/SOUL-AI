@@ -53,7 +53,7 @@ export default function Auth() {
             </h1>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                 <FormField
                   control={form.control}
                   name="username"
@@ -61,7 +61,11 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel className="text-white">Username</FormLabel>
                       <FormControl>
-                        <Input {...field} className="bg-white/20 border-white/20 text-white placeholder:text-white/70" />
+                        <Input 
+                          {...field} 
+                          autoComplete="off"
+                          className="bg-white/20 border-white/20 text-white placeholder:text-white/70" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -76,7 +80,8 @@ export default function Auth() {
                       <FormLabel className="text-white">Password</FormLabel>
                       <FormControl>
                         <Input 
-                          type="password" 
+                          type="password"
+                          autoComplete="new-password"
                           {...field} 
                           className="bg-white/20 border-white/20 text-white placeholder:text-white/70"
                         />
