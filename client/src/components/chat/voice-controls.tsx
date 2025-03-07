@@ -50,27 +50,51 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType =
         setRecognition(recognition);
       }
 
-      // Enhanced voice selection with gender preference
+      // Enhanced voice selection with improved gender detection
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // Filter voices based on voiceType
+        // Improved voice detection criteria
         const targetVoices = voices.filter(voice => {
           const isEnglish = voice.lang.startsWith('en');
           const voiceName = voice.name.toLowerCase();
-          const isMale = voiceName.includes('male') || voiceName.includes('guy') || voiceName.includes('james');
-          const isFemale = voiceName.includes('female') || voiceName.includes('woman') || voiceName.includes('girl');
+
+          // Enhanced male voice detection
+          const isMale = voiceName.includes('male') || 
+                        voiceName.includes('guy') || 
+                        voiceName.includes('david') ||
+                        voiceName.includes('thomas') ||
+                        voiceName.includes('james') ||
+                        voiceName.includes('john') ||
+                        voiceName.includes('peter') ||
+                        (voiceName.includes('google') && voiceName.includes('uk') && !voiceName.includes('female'));
+
+          // Female voice detection
+          const isFemale = voiceName.includes('female') || 
+                          voiceName.includes('woman') || 
+                          voiceName.includes('girl') ||
+                          voiceName.includes('victoria') ||
+                          voiceName.includes('elizabeth');
 
           if (voiceType === "male") {
-            return isEnglish && isMale;
+            return isEnglish && isMale && !isFemale;
           } else {
             return isEnglish && isFemale;
           }
         });
 
+        // Log matching voices for debugging
+        console.log(`Found ${targetVoices.length} matching ${voiceType} voices:`, 
+          targetVoices.map(v => v.name));
+
         // Select the first matching voice or fall back to any English voice
-        const selectedVoice = targetVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
+        const selectedVoice = targetVoices[0] || voices.find(voice => 
+          voice.lang.startsWith('en') && 
+          ((voiceType === "male" && !voice.name.toLowerCase().includes('female')) ||
+           (voiceType === "female" && voice.name.toLowerCase().includes('female')))
+        );
+
         console.log(`Selected ${voiceType} voice:`, selectedVoice?.name);
         setPreferredVoice(selectedVoice || null);
       };
@@ -120,7 +144,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled, voiceType =
 
       // Adjust voice characteristics based on gender
       if (voiceType === "male") {
-        utterance.pitch = 0.9;
+        utterance.pitch = 0.8;  // Lower pitch for male voice
         utterance.rate = 0.9;
       } else {
         utterance.pitch = 1.1;
