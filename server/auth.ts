@@ -1,12 +1,20 @@
 import { Express } from "express";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 import { storage } from "./storage";
 
 export function setupAuth(app: Express) {
   console.log("Setting up authentication...");
 
-  // Basic session setup with more secure settings
+  const PostgresStore = connectPg(session);
+
+  // Session setup with PostgreSQL store
   app.use(session({
+    store: new PostgresStore({
+      pool,
+      createTableIfMissing: true,
+    }),
     secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false,
@@ -58,7 +66,7 @@ export function setupAuth(app: Express) {
       const user = await storage.getUserByUsername(username);
       console.log("Found user:", user ? { id: user.id, username: user.username } : "null");
 
-      if (!user || user.password !== password) {
+      if (!user || !await storage.verifyPassword(username, password)) {
         console.log("Login failed: Invalid credentials");
         return res.status(401).json({ error: "Invalid credentials" });
       }
