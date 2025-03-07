@@ -95,6 +95,9 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         return;
       }
 
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
       // Configure speech parameters for better cadence
