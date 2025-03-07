@@ -1,13 +1,14 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { insertUserSchema, type InsertUser } from "@shared/schema";
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,13 +39,19 @@ export default function Auth() {
       } else {
         await registerMutation.mutateAsync(data);
       }
-      console.log("Auth successful, user should be updated and trigger redirect");
-      setLocation("/home"); //Added redirect to /home after successful auth
+      setLocation("/home");
     } catch (error) {
-      // Error handling is done in the mutations
       console.error("Auth error:", error);
     }
   };
+
+  if (loginMutation.isPending || registerMutation.isPending) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
@@ -56,7 +63,7 @@ export default function Auth() {
             </h1>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="username"
@@ -99,7 +106,7 @@ export default function Auth() {
                   className="w-full bg-white/20 hover:bg-white/30 text-white" 
                   disabled={loginMutation.isPending || registerMutation.isPending}
                 >
-                  {(loginMutation.isPending || registerMutation.isPending) ? "Loading..." : isLogin ? "Login" : "Create Account"}
+                  {isLogin ? "Login" : "Create Account"}
                 </Button>
 
                 <Button
