@@ -36,22 +36,11 @@ export default function Home() {
               <CardDescription className="text-white/70">Resume your conversation</CardDescription>
             </CardHeader>
             <CardContent>
-              {preferences ? (
-                <Link href="/chat">
-                  <Button className="w-full bg-white/20 hover:bg-white/30 text-white" variant="outline">
-                    Open Chat
-                  </Button>
-                </Link>
-              ) : (
-                <Button 
-                  className="w-full bg-white/20 hover:bg-white/30 text-white opacity-50" 
-                  variant="outline" 
-                  disabled
-                  title="Configure your AI companion first"
-                >
-                  Setup Required
+              <Link href="/chat">
+                <Button className="w-full bg-white/20 hover:bg-white/30 text-white" variant="outline">
+                  Open Chat
                 </Button>
-              )}
+              </Link>
             </CardContent>
           </Card>
         </div>
