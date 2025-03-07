@@ -54,7 +54,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // First try to find British English male voices
+        // First try to find British English voices
         const britishVoice = voices.find(voice =>
           voice.lang.startsWith('en-GB') && (
             // British voice identifiers
@@ -95,6 +95,25 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
             setPreferredVoice(anyEnglishVoice || voices[0]);
           }
         }
+
+        // Log available English voices for selection
+        console.log("\nAvailable English Voices:");
+        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+
+        console.log("\nBritish Voices:");
+        englishVoices
+          .filter(voice => voice.lang === 'en-GB')
+          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
+
+        console.log("\nAmerican Voices:");
+        englishVoices
+          .filter(voice => voice.lang === 'en-US')
+          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
+
+        console.log("\nOther English Voices:");
+        englishVoices
+          .filter(voice => !['en-GB', 'en-US'].includes(voice.lang))
+          .forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
       };
 
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
