@@ -5,15 +5,22 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, For
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import { insertUserSchema, type InsertUser } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, loginMutation, registerMutation } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   const form = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
@@ -23,26 +30,18 @@ export default function Auth() {
     },
   });
 
-  const mutation = useMutation({
-    mutationFn: async (data: InsertUser) => {
-      const endpoint = isLogin ? "/api/login" : "/api/register";
-      await apiRequest("POST", endpoint, data);
-    },
-    onSuccess: () => {
-      toast({
-        title: isLogin ? "Welcome back!" : "Account created",
-        description: isLogin ? "Successfully logged in" : "Your account has been created",
-      });
+  const onSubmit = async (data: InsertUser) => {
+    try {
+      if (isLogin) {
+        await loginMutation.mutateAsync(data);
+      } else {
+        await registerMutation.mutateAsync(data);
+      }
       setLocation("/");
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: isLogin ? "Invalid credentials" : "Username already exists",
-        variant: "destructive",
-      });
-    },
-  });
+    } catch (error) {
+      // Error handling is done in the mutations
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
@@ -54,7 +53,7 @@ export default function Auth() {
             </h1>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="username"
@@ -90,9 +89,9 @@ export default function Auth() {
                 <Button 
                   type="submit" 
                   className="w-full bg-white/20 hover:bg-white/30 text-white" 
-                  disabled={mutation.isPending}
+                  disabled={loginMutation.isPending || registerMutation.isPending}
                 >
-                  {mutation.isPending ? "Loading..." : isLogin ? "Login" : "Create Account"}
+                  {(loginMutation.isPending || registerMutation.isPending) ? "Loading..." : isLogin ? "Login" : "Create Account"}
                 </Button>
 
                 <Button
