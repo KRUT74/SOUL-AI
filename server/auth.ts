@@ -15,16 +15,10 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function comparePasswords(supplied: string, stored: string) {
-  try {
-    const [hashed, salt] = stored.split(".");
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
-  } catch (error) {
-    console.error("Error comparing passwords:", error);
-    return false;
-  }
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
 }
 
 export function setupAuth(app: Express) {
@@ -47,23 +41,14 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false);
-        }
-
-        const isValid = await comparePasswords(password, user.password);
-        if (!isValid) {
-          return done(null, false);
-        }
-        return done(null, user);
+        return done(null, user || false);
       } catch (error) {
-        console.error("Authentication error:", error);
         return done(error);
       }
     })
   );
 
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
@@ -76,28 +61,26 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Simplified registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
-      console.log("Registration attempt for username:", req.body.username);
-
-      const existing = await storage.getUserByUsername(req.body.username);
-      if (existing) {
-        console.log("Username already exists:", req.body.username);
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      const user = await storage.createUser(req.body);
-      console.log("User created successfully:", user.username);
+      const hashedPassword = await hashPassword(req.body.password);
+      const user = await storage.createUser({
+        username: req.body.username,
+        password: hashedPassword,
+      });
 
       req.login(user, (err) => {
         if (err) {
-          console.error("Login after registration failed:", err);
           return res.status(500).json({ error: "Failed to login after registration" });
         }
         return res.status(201).json(user);
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
+      if (error.message === "Username already exists") {
+        return res.status(400).json({ error: "Username already exists" });
+      }
       res.status(500).json({ error: "Failed to register user" });
     }
   });

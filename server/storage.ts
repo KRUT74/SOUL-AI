@@ -4,18 +4,8 @@ import {
   User, InsertUser,
   messages, companions, users 
 } from "@shared/schema";
-import { db, sql } from "./db";
+import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
-
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
 
 export interface IStorage {
   // User operations
@@ -37,32 +27,20 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async createUser(user: InsertUser): Promise<User> {
     try {
-      console.log("Creating user:", user.username);
-
-      // Check for existing user case-insensitively
-      const existingUser = await db.select()
-        .from(users)
-        .where(sql`LOWER(username) = LOWER(${user.username})`)
-        .limit(1);
-
-      console.log("Existing user check result:", existingUser);
-
-      if (existingUser.length > 0) {
-        throw new Error("Username already exists");
-      }
-
-      const hashedPassword = await hashPassword(user.password);
+      // First try to create the user
       const [newUser] = await db.insert(users)
         .values({
           username: user.username,
-          password: hashedPassword,
+          password: user.password,
         })
         .returning();
 
-      console.log("User created:", newUser.username);
       return newUser;
-    } catch (error) {
-      console.error("Error creating user:", error);
+    } catch (error: any) {
+      // Check if the error is a unique constraint violation
+      if (error.code === '23505') {
+        throw new Error("Username already exists");
+      }
       throw error;
     }
   }
@@ -73,20 +51,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      console.log("Looking up user:", username);
-
-      // Case-insensitive username lookup
-      const [user] = await db.select()
-        .from(users)
-        .where(sql`LOWER(username) = LOWER(${username})`);
-
-      console.log("User lookup result:", user ? "found" : "not found");
-      return user;
-    } catch (error) {
-      console.error("Error looking up user:", error);
-      throw error;
-    }
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
   }
 
   // Companion operations
@@ -103,7 +71,10 @@ export class DatabaseStorage implements IStorage {
 
   async createCompanion(companion: InsertCompanion): Promise<Companion> {
     const [newCompanion] = await db.insert(companions)
-      .values(companion)
+      .values({
+        userId: companion.userId,
+        settings: companion.settings,
+      })
       .returning();
     return newCompanion;
   }
