@@ -14,7 +14,7 @@ class MemoryStorage implements IStorage {
   private preferences?: { settings: CompanionSettings };
 
   async createUser(userData: InsertUser): Promise<User> {
-    // Check if username exists
+    // Check if username exists (case-insensitive)
     const existingUser = await this.getUserByUsername(userData.username);
     if (existingUser) {
       throw new Error("Username already exists");
@@ -29,24 +29,30 @@ class MemoryStorage implements IStorage {
 
     this.users.push(user);
     console.log('Created user:', { id: user.id, username: user.username });
+    console.log('Current users in storage:', this.users.map(u => ({ id: u.id, username: u.username })));
     return user;
   }
 
   async getUserById(id: number): Promise<User | undefined> {
-    return this.users.find(u => u.id === id);
+    const user = this.users.find(u => u.id === id);
+    console.log(`Looking up user by id ${id}:`, user ? { id: user.id, username: user.username } : 'not found');
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(u => u.username === username);
+    const user = this.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    console.log(`Looking up user by username ${username}:`, user ? { id: user.id, username: user.username } : 'not found');
+    return user;
   }
 
   async getPreferences(): Promise<{ settings: CompanionSettings } | undefined> {
+    console.log('Getting preferences:', this.preferences);
     return this.preferences;
   }
 
   async setPreferences(prefs: { settings: CompanionSettings }): Promise<{ settings: CompanionSettings }> {
     this.preferences = prefs;
-    console.log('Saved preferences:', prefs);
+    console.log('Saved preferences:', this.preferences);
     return prefs;
   }
 }
