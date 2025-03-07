@@ -11,12 +11,13 @@ import { generateResponse } from "./anthropic";
 import { companionSettings, insertMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get chat messages
+  // Get chat messages - modified to only get the logged-in user's messages
   app.get("/api/messages", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
+      console.log("Fetching messages for user:", req.session.userId);
       const messages = await storage.getMessages(req.session.userId);
       res.json(messages);
     } catch (error) {
@@ -35,9 +36,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = insertMessageSchema.parse({
         content: req.body.content,
         role: "user",
-        timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
+        timestamp: Math.floor(Date.now() / 1000),
       });
 
+      console.log("Adding message for user:", req.session.userId);
       const savedMessage = await storage.addMessage(req.session.userId, message);
 
       const prefs = await storage.getPreferences(req.session.userId);
@@ -45,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Companion not configured");
       }
 
+      // Get only this user's messages for context
       const messages = await storage.getMessages(req.session.userId);
       const context = messages.slice(-6).map(m => m.content);
 
@@ -57,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assistantMessage = await storage.addMessage(req.session.userId, {
         content: aiResponse,
         role: "assistant",
-        timestamp: Math.floor(Date.now() / 1000), // Convert to seconds
+        timestamp: Math.floor(Date.now() / 1000),
       });
 
       res.json(savedMessage);

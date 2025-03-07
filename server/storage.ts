@@ -111,11 +111,13 @@ class DatabaseStorage implements IStorage {
   }
 
   async getMessages(userId: number): Promise<Message[]> {
+    console.log('Fetching messages for user:', userId);
     const dbMessages = await db.query.messages.findMany({
       where: eq(messages.userId, userId),
       orderBy: (messages, { asc }) => [asc(messages.timestamp)],
     });
 
+    console.log(`Found ${dbMessages.length} messages for user ${userId}`);
     return dbMessages.map(msg => ({
       id: msg.id,
       content: msg.content,
@@ -125,6 +127,7 @@ class DatabaseStorage implements IStorage {
   }
 
   async addMessage(userId: number, messageData: Omit<Message, "id">): Promise<Message> {
+    console.log('Adding message for user:', userId);
     const [message] = await db.insert(messages)
       .values({
         userId,
