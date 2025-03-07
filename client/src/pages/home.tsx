@@ -7,10 +7,10 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/10 px-4">
       <div className="mx-auto max-w-4xl pt-20 text-center">
         <h1 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-4xl font-bold text-transparent sm:text-6xl">
-          Your Personal AI Companion
+          Soulmate AI
         </h1>
         <p className="mt-6 text-lg text-muted-foreground">
-          Create a unique AI friend who understands you, shares your interests, and is always there to chat.
+          Create your perfect AI companion who understands you, shares your interests, and is always there to chat.
         </p>
 
         <div className="mt-12 grid gap-8 sm:grid-cols-2">
