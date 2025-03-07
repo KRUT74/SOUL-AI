@@ -27,18 +27,15 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async createUser(user: InsertUser): Promise<User> {
     try {
-      // First try to create the user
       const [newUser] = await db.insert(users)
         .values({
           username: user.username,
           password: user.password,
         })
         .returning();
-
       return newUser;
     } catch (error: any) {
-      // Check if the error is a unique constraint violation
-      if (error.code === '23505') {
+      if (error.code === '23505') { // PostgreSQL unique violation error code
         throw new Error("Username already exists");
       }
       throw error;
@@ -51,9 +48,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select()
-      .from(users)
-      .where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 

@@ -21,19 +21,25 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
 export function setupAuth(app: Express) {
-  const sessionSettings: session.SessionOptions = {
+  app.use(session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     },
-  };
+  }));
 
-  app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -41,7 +47,10 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        return done(null, user || false);
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false);
+        }
+        return done(null, user);
       } catch (error) {
         return done(error);
       }
@@ -61,27 +70,39 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Simplified registration endpoint
+  // Basic registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
-      const hashedPassword = await hashPassword(req.body.password);
+      const { username, password } = req.body;
+
+      // Basic validation
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
       const user = await storage.createUser({
-        username: req.body.username,
+        username,
         password: hashedPassword,
       });
 
+      // Log the user in after registration
       req.login(user, (err) => {
         if (err) {
+          console.error("Login after registration failed:", err);
           return res.status(500).json({ error: "Failed to login after registration" });
         }
         return res.status(201).json(user);
       });
     } catch (error: any) {
       console.error("Registration error:", error);
+
       if (error.message === "Username already exists") {
         return res.status(400).json({ error: "Username already exists" });
       }
-      res.status(500).json({ error: "Failed to register user" });
+
+      return res.status(500).json({ error: "Failed to register user" });
     }
   });
 
