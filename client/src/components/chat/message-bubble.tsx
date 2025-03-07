@@ -1,3 +1,5 @@
+import { VoiceControls } from "./voice-controls";
+
 interface MessageBubbleProps {
   content: string;
   isUser: boolean;
@@ -14,6 +16,11 @@ export function MessageBubble({ content, isUser }: MessageBubbleProps) {
         }`}
       >
         <p className="whitespace-pre-wrap break-words">{content}</p>
+        {!isUser && (
+          <div className="mt-2 flex justify-end">
+            <VoiceControls textToSpeak={content} />
+          </div>
+        )}
       </div>
     </div>
   );
