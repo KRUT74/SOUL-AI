@@ -14,6 +14,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
   const [isSpeaking, setIsSpeaking] = useState(false);
   const { toast } = useToast();
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [preferredVoice, setPreferredVoice] = useState<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -47,6 +48,22 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
 
         setRecognition(recognition);
       }
+
+      // Initialize preferred voice
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        // Try to find a male English voice
+        const maleVoice = voices.find(voice => 
+          voice.lang.startsWith('en') && 
+          voice.name.toLowerCase().includes('male')
+        );
+        setPreferredVoice(maleVoice || voices[0]);
+      };
+
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+      loadVoices();
     }
   }, [onVoiceInput, toast]);
 
@@ -79,6 +96,15 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       }
 
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+      // Configure speech parameters for better cadence
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+      utterance.rate = 0.9; // Slightly slower for better clarity
+      utterance.pitch = 1.0; // Natural pitch
+      utterance.volume = 1.0;
+
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => {
         setIsSpeaking(false);
