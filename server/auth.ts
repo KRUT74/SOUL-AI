@@ -71,6 +71,7 @@ export function setupAuth(app: Express) {
     try {
       const user = await storage.getUserById(req.session.userId);
       if (!user) {
+        console.log("User not found:", { id: req.session.userId });
         return res.sendStatus(401);
       }
       res.json(user);

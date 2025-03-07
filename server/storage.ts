@@ -11,6 +11,12 @@ class MemoryStorage implements IStorage {
   private nextId = 1;
 
   async createUser(userData: InsertUser): Promise<User> {
+    // Check if username exists
+    const existingUser = await this.getUserByUsername(userData.username);
+    if (existingUser) {
+      throw new Error("Username already exists");
+    }
+
     const user: User = {
       id: this.nextId++,
       username: userData.username,
@@ -20,7 +26,6 @@ class MemoryStorage implements IStorage {
 
     this.users.push(user);
     console.log('Created user:', { id: user.id, username: user.username });
-    console.log('Current users:', this.users);
     return user;
   }
 

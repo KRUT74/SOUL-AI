@@ -1,12 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { setupAuth } from "./auth";
-import { setupVite, serveStatic } from "./vite";
-import path from "path";
-import { fileURLToPath } from "url";
+import { setupVite } from "./vite";
 import { createServer } from "http";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 console.log("Starting server initialization...");
 
@@ -43,13 +38,8 @@ setupAuth(app);
 
 const server = createServer(app);
 
-// Setup Vite in development, otherwise serve static files
-if (process.env.NODE_ENV === "production") {
-  serveStatic(app);
-} else {
-  // In development, let Vite handle all routes except /api
-  setupVite(app, server);
-}
+// Setup Vite for development
+setupVite(app, server);
 
 // Start server
 const port = 5000;
