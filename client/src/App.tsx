@@ -8,14 +8,12 @@ import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import Settings from "@/pages/settings";
 import Auth from "@/pages/auth";
-import Landing from "@/pages/landing";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/auth" component={Auth} />
+      <Route path="/" component={Auth} />
       <ProtectedRoute path="/home" component={Home} />
       <ProtectedRoute path="/chat" component={Chat} />
       <ProtectedRoute path="/settings" component={Settings} />
