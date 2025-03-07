@@ -2,10 +2,7 @@ import {
   Message, InsertMessage, 
   Companion, InsertCompanion,
   User, InsertUser,
-  messages, companions, users 
 } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -23,71 +20,77 @@ export interface IStorage {
   addMessage(message: InsertMessage): Promise<Message>;
 }
 
-export class DatabaseStorage implements IStorage {
+// Simple in-memory storage for testing
+export class MemoryStorage implements IStorage {
+  private users: User[] = [];
+  private companions: Companion[] = [];
+  private messages: Message[] = [];
+  private nextUserId = 1;
+  private nextCompanionId = 1;
+  private nextMessageId = 1;
+
   // User operations
-  async createUser(user: InsertUser): Promise<User> {
-    try {
-      const [newUser] = await db.insert(users)
-        .values({
-          username: user.username,
-          password: user.password,
-        })
-        .returning();
-      return newUser;
-    } catch (error: any) {
-      if (error.code === '23505') { // PostgreSQL unique violation error code
-        throw new Error("Username already exists");
-      }
-      throw error;
+  async createUser(userData: InsertUser): Promise<User> {
+    // Check if username exists
+    const existing = this.users.find(u => u.username === userData.username);
+    if (existing) {
+      throw new Error("Username already exists");
     }
+
+    const user: User = {
+      id: this.nextUserId++,
+      username: userData.username,
+      password: userData.password,
+      createdAt: new Date(),
+    };
+
+    this.users.push(user);
+    return user;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.users.find(u => u.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    return this.users.find(u => u.username === username);
   }
 
   // Companion operations
   async getCompanion(id: number): Promise<Companion | undefined> {
-    const [companion] = await db.select().from(companions).where(eq(companions.id, id));
-    return companion;
+    return this.companions.find(c => c.id === id);
   }
 
   async getCompanionsByUserId(userId: number): Promise<Companion[]> {
-    return await db.select()
-      .from(companions)
-      .where(eq(companions.userId, userId));
+    return this.companions.filter(c => c.userId === userId);
   }
 
-  async createCompanion(companion: InsertCompanion): Promise<Companion> {
-    const [newCompanion] = await db.insert(companions)
-      .values({
-        userId: companion.userId,
-        settings: companion.settings,
-      })
-      .returning();
-    return newCompanion;
+  async createCompanion(companionData: InsertCompanion): Promise<Companion> {
+    const companion: Companion = {
+      id: this.nextCompanionId++,
+      userId: companionData.userId,
+      settings: companionData.settings,
+      createdAt: new Date(),
+    };
+
+    this.companions.push(companion);
+    return companion;
   }
 
   // Message operations
   async getMessagesByCompanionId(companionId: number): Promise<Message[]> {
-    return await db.select()
-      .from(messages)
-      .where(eq(messages.companionId, companionId))
-      .orderBy(messages.timestamp);
+    return this.messages.filter(m => m.companionId === companionId);
   }
 
-  async addMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db.insert(messages)
-      .values(message)
-      .returning();
-    return newMessage;
+  async addMessage(messageData: InsertMessage): Promise<Message> {
+    const message: Message = {
+      id: this.nextMessageId++,
+      ...messageData,
+    };
+
+    this.messages.push(message);
+    return message;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemoryStorage();
