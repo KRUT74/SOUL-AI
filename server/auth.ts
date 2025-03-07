@@ -48,13 +48,10 @@ export function setupAuth(app: Express) {
       try {
         const user = await storage.getUserByUsername(username);
         if (!user) {
-          console.log("User not found:", username);
           return done(null, false);
         }
 
         const isValid = await comparePasswords(password, user.password);
-        console.log("Password validation result:", isValid);
-
         if (!isValid) {
           return done(null, false);
         }
@@ -81,14 +78,20 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
+      console.log("Registration attempt for username:", req.body.username);
+
       const existing = await storage.getUserByUsername(req.body.username);
       if (existing) {
+        console.log("Username already exists:", req.body.username);
         return res.status(400).json({ error: "Username already exists" });
       }
 
       const user = await storage.createUser(req.body);
+      console.log("User created successfully:", user.username);
+
       req.login(user, (err) => {
         if (err) {
+          console.error("Login after registration failed:", err);
           return res.status(500).json({ error: "Failed to login after registration" });
         }
         return res.status(201).json(user);

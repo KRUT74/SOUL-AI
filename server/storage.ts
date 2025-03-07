@@ -37,11 +37,15 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async createUser(user: InsertUser): Promise<User> {
     try {
+      console.log("Creating user:", user.username);
+
       // Check for existing user case-insensitively
       const existingUser = await db.select()
         .from(users)
         .where(sql`LOWER(username) = LOWER(${user.username})`)
         .limit(1);
+
+      console.log("Existing user check result:", existingUser);
 
       if (existingUser.length > 0) {
         throw new Error("Username already exists");
@@ -50,10 +54,12 @@ export class DatabaseStorage implements IStorage {
       const hashedPassword = await hashPassword(user.password);
       const [newUser] = await db.insert(users)
         .values({
-          ...user,
+          username: user.username,
           password: hashedPassword,
         })
         .returning();
+
+      console.log("User created:", newUser.username);
       return newUser;
     } catch (error) {
       console.error("Error creating user:", error);
@@ -67,11 +73,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    // Case-insensitive username lookup
-    const [user] = await db.select()
-      .from(users)
-      .where(sql`LOWER(username) = LOWER(${username})`);
-    return user;
+    try {
+      console.log("Looking up user:", username);
+
+      // Case-insensitive username lookup
+      const [user] = await db.select()
+        .from(users)
+        .where(sql`LOWER(username) = LOWER(${username})`);
+
+      console.log("User lookup result:", user ? "found" : "not found");
+      return user;
+    } catch (error) {
+      console.error("Error looking up user:", error);
+      throw error;
+    }
   }
 
   // Companion operations
