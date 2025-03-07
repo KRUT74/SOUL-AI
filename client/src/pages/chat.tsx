@@ -10,18 +10,22 @@ import { Settings, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserMenu } from "@/components/user-menu";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Chat() {
   const [_, setLocation] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: ["/api/messages"]
+    queryKey: ["/api/messages", user?.id],
+    enabled: !!user
   });
 
   const { data: preferences, isLoading: preferencesLoading } = useQuery<Preferences>({
-    queryKey: ["/api/preferences"]
+    queryKey: ["/api/preferences", user?.id],
+    enabled: !!user
   });
 
   const messageMutation = useMutation({
@@ -31,7 +35,7 @@ export default function Chat() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages", user?.id] });
     },
     onError: (error) => {
       toast({
@@ -62,7 +66,7 @@ export default function Chat() {
     <div className="flex h-screen flex-col bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
       <header className="border-b bg-white/10 backdrop-blur-sm px-4 py-3">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-white hover:bg-white/20">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/home")} className="text-white hover:bg-white/20">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold text-white">{preferences.settings.name}</h1>

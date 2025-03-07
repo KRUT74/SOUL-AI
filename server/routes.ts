@@ -19,6 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("Fetching messages for user:", req.session.userId);
       const messages = await storage.getMessages(req.session.userId);
+      console.log(`Returning ${messages.length} messages for user ${req.session.userId}:`, 
+        messages.map(m => ({ id: m.id, role: m.role, userId: req.session.userId })));
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -41,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Adding message for user:", req.session.userId);
       const savedMessage = await storage.addMessage(req.session.userId, message);
+      console.log("Saved user message:", { id: savedMessage.id, role: savedMessage.role, userId: req.session.userId });
 
       const prefs = await storage.getPreferences(req.session.userId);
       if (!prefs) {
@@ -62,6 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "assistant",
         timestamp: Math.floor(Date.now() / 1000),
       });
+      console.log("Saved AI response:", { id: assistantMessage.id, role: assistantMessage.role, userId: req.session.userId });
 
       res.json(savedMessage);
     } catch (error) {

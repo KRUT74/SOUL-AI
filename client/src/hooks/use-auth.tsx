@@ -33,6 +33,8 @@ function useLoginMutation() {
     },
     onSuccess: (user: User) => {
       console.log("Login successful, updating user data:", user);
+      // Clear all queries before setting new user data
+      queryClient.removeQueries();
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Welcome back!",
@@ -61,6 +63,8 @@ function useRegisterMutation() {
     },
     onSuccess: (user: User) => {
       console.log("Registration successful, updating user data:", user);
+      // Clear all queries before setting new user data
+      queryClient.removeQueries();
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Welcome!",
@@ -86,6 +90,8 @@ function useLogoutMutation() {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Clear all cached data on logout
+      queryClient.removeQueries();
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Goodbye!",
@@ -124,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null; 
       }
     },
+    staleTime: 0, // Ensure fresh data on mount
   });
 
   const loginMutation = useLoginMutation();
