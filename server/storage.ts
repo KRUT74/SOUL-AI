@@ -28,7 +28,14 @@ export class DatabaseStorage implements IStorage {
   async setPreferences(prefs: InsertPreferences): Promise<Preferences> {
     // Delete existing preferences first since we only want one record
     await db.delete(preferences);
-    const [newPrefs] = await db.insert(preferences).values(prefs).returning();
+
+    // Insert new preferences with properly formatted data
+    const [newPrefs] = await db.insert(preferences)
+      .values({
+        settings: prefs.settings
+      })
+      .returning();
+
     return newPrefs;
   }
 }
