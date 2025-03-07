@@ -11,8 +11,8 @@ export function MessageBubble({ content, isUser }: MessageBubbleProps) {
       <div
         className={`rounded-lg px-4 py-2 max-w-[80%] ${
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
+            ? "bg-white/20 text-white"
+            : "bg-white/10 text-white"
         }`}
       >
         <p className="whitespace-pre-wrap break-words">{content}</p>

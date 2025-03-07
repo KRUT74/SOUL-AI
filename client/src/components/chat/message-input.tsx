@@ -40,7 +40,7 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
-          className="resize-none"
+          className="resize-none bg-white/20 border-white/20 text-white placeholder:text-white/70"
           disabled={disabled}
           rows={1}
         />
@@ -48,6 +48,7 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
           onClick={handleSend}
           disabled={disabled || !message.trim()}
           size="icon"
+          className="bg-white/20 hover:bg-white/30 text-white"
         >
           <Send className="h-4 w-4" />
         </Button>
