@@ -1,4 +1,4 @@
-import { User, InsertUser, CompanionSettings } from "@shared/schema";
+import { User, InsertUser, CompanionSettings, Message, insertMessageSchema } from "@shared/schema";
 
 export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
@@ -6,12 +6,16 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getPreferences(): Promise<{ settings: CompanionSettings } | undefined>;
   setPreferences(prefs: { settings: CompanionSettings }): Promise<{ settings: CompanionSettings }>;
+  getMessages(): Promise<Message[]>;
+  addMessage(message: Omit<Message, "id">): Promise<Message>;
 }
 
 class MemoryStorage implements IStorage {
   private users: User[] = [];
   private nextId = 1;
+  private nextMessageId = 1;
   private preferences?: { settings: CompanionSettings };
+  private messages: Message[] = [];
 
   async createUser(userData: InsertUser): Promise<User> {
     // Check if username exists (case-insensitive)
@@ -54,6 +58,21 @@ class MemoryStorage implements IStorage {
     this.preferences = prefs;
     console.log('Saved preferences:', this.preferences);
     return prefs;
+  }
+
+  async getMessages(): Promise<Message[]> {
+    return this.messages;
+  }
+
+  async addMessage(messageData: Omit<Message, "id">): Promise<Message> {
+    const message: Message = {
+      ...messageData,
+      id: this.nextMessageId++
+    };
+
+    this.messages.push(message);
+    console.log('Added message:', message);
+    return message;
   }
 }
 

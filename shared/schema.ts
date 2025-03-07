@@ -14,6 +14,13 @@ export const companionSettings = z.object({
   avatar: z.string().optional(),
 });
 
+// Message schema
+export const insertMessageSchema = z.object({
+  content: z.string().min(1, "Message cannot be empty"),
+  role: z.enum(["user", "assistant"]),
+  timestamp: z.number(),
+});
+
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = InsertUser & {
@@ -22,3 +29,6 @@ export type User = InsertUser & {
 };
 
 export type CompanionSettings = z.infer<typeof companionSettings>;
+export type Message = z.infer<typeof insertMessageSchema> & {
+  id: number;
+};
