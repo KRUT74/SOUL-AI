@@ -49,40 +49,50 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         setRecognition(recognition);
       }
 
-      // Enhanced voice selection with more criteria and logging
+      // Enhanced voice selection with US voices prioritization
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         console.log("Available voices:", voices);
 
-        // Expanded voice search criteria
-        const maleVoice = voices.find(voice =>
-          voice.lang.startsWith('en') && (
-            // Standard male voice identifiers
-            voice.name.toLowerCase().includes('male') ||
-            // Common male names
-            voice.name.toLowerCase().includes('david') ||
-            voice.name.toLowerCase().includes('james') ||
-            voice.name.toLowerCase().includes('john') ||
+        // First try to find American English male voices
+        const americanVoice = voices.find(voice =>
+          voice.lang.startsWith('en-US') && (
+            // American voice identifiers
             voice.name.toLowerCase().includes('guy') ||
             voice.name.toLowerCase().includes('mike') ||
+            voice.name.toLowerCase().includes('josh') ||
+            voice.name.toLowerCase().includes('reed') ||
             voice.name.toLowerCase().includes('tom') ||
-            // Additional male voice identifiers
-            voice.name.toLowerCase().includes('bruce') ||
-            voice.name.toLowerCase().includes('daniel') ||
-            voice.name.toLowerCase().includes('peter') ||
-            // Regional variations
-            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male') ||
-            voice.name.toLowerCase().includes('en-us') && voice.name.toLowerCase().includes('male')
+            voice.name.toLowerCase().includes('american') ||
+            voice.name.toLowerCase().includes('us male') ||
+            // Common American names
+            voice.name.toLowerCase().includes('alex') ||
+            voice.name.toLowerCase().includes('chris') ||
+            voice.name.toLowerCase().includes('john') ||
+            voice.name.toLowerCase().includes('matthew') ||
+            // General male indicators for US voices
+            (voice.name.toLowerCase().includes('male') && voice.lang === 'en-US')
           )
         );
 
-        if (maleVoice) {
-          console.log('Selected male voice:', maleVoice.name);
-          setPreferredVoice(maleVoice);
+        if (americanVoice) {
+          console.log('Selected American voice:', americanVoice.name);
+          setPreferredVoice(americanVoice);
         } else {
-          console.log("No suitable male voice found.");
-          const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
-          setPreferredVoice(englishVoice || voices[0]);
+          console.log("No suitable American voice found, falling back to general English voices");
+          // Fallback to any English male voice
+          const englishVoice = voices.find(voice => 
+            voice.lang.startsWith('en') && 
+            voice.name.toLowerCase().includes('male')
+          );
+          if (englishVoice) {
+            console.log('Selected English voice:', englishVoice.name);
+            setPreferredVoice(englishVoice);
+          } else {
+            // Final fallback to any English voice
+            const anyEnglishVoice = voices.find(voice => voice.lang.startsWith('en'));
+            setPreferredVoice(anyEnglishVoice || voices[0]);
+          }
         }
       };
 
