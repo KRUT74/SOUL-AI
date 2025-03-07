@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Settings, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { UserMenu } from "@/components/user-menu";
 
 export default function Chat() {
   const [_, setLocation] = useLocation();
@@ -65,9 +66,12 @@ export default function Chat() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold text-white">{preferences.settings.name}</h1>
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")} className="text-white hover:bg-white/20">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")} className="text-white hover:bg-white/20">
+              <Settings className="h-5 w-5" />
+            </Button>
+            <UserMenu />
+          </div>
         </div>
       </header>
 

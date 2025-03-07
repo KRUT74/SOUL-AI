@@ -1,10 +1,14 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { UserMenu } from "@/components/user-menu";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 px-4">
+      <header className="absolute top-0 right-0 p-4">
+        <UserMenu />
+      </header>
       <div className="mx-auto max-w-4xl pt-20 text-center">
         <h1 className="text-4xl font-bold text-white sm:text-6xl">
           Soulmate AI
