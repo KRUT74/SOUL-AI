@@ -149,15 +149,15 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
             utterance.voice = preferredVoice;
           }
           // Adjusted voice parameters for British character
-          utterance.rate = 0.90;  // Slightly slower for clarity
-          utterance.pitch = 1.05; // Slightly higher pitch for British accent
+          utterance.rate = 0.80;  // Slower rate for more natural speech
+          utterance.pitch = 1.0; // Neutral pitch for more natural sound
           utterance.volume = 1.0;
 
           utterance.onend = () => {
             currentChunkIndex++;
             if (currentChunkIndex < chunks.length) {
-              // Small delay between chunks for natural pauses
-              setTimeout(speakNextChunk, 100);
+              // Longer pause between sentences for more natural rhythm
+              setTimeout(speakNextChunk, 500);
             } else {
               setIsSpeaking(false);
               window.speechSynthesis.cancel(); // Final cleanup
@@ -180,7 +180,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       setIsSpeaking(true);
       speakNextChunk();
 
-      // Keep speech synthesis active
+      // Keep speech synthesis active with longer keep-alive interval
       const keepAlive = setInterval(() => {
         if (isSpeaking) {
           window.speechSynthesis.pause();
