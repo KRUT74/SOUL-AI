@@ -7,12 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { ArrowLeft } from "lucide-react";
+import React from 'react';
+import { Slider } from "@/components/ui/slider";
 
 export default function Settings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Fetch existing preferences
+  const { data: existingPreferences, isLoading } = useQuery({
+    queryKey: ["/api/preferences", user?.id],
+    enabled: !!user
+  });
 
   const form = useForm<CompanionSettings>({
     resolver: zodResolver(companionSettings),
@@ -20,8 +31,16 @@ export default function Settings() {
       name: "",
       personality: "",
       interests: [],
+      temperature: 50, //Added default value for temperature
     },
   });
+
+  // Set form values when existing preferences are loaded
+  React.useEffect(() => {
+    if (existingPreferences?.settings) {
+      form.reset(existingPreferences.settings);
+    }
+  }, [existingPreferences, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: CompanionSettings) => {
@@ -40,6 +59,8 @@ export default function Settings() {
         description: "Your AI companion has been configured",
       });
       console.log('Redirecting to /chat...');
+      // Invalidate preferences query to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/preferences", user?.id] });
       setLocation("/chat");
     },
     onError: (error: Error) => {
@@ -52,10 +73,30 @@ export default function Settings() {
     },
   });
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
       <div className="container max-w-2xl py-10">
-        <h1 className="mb-8 text-3xl font-bold text-white">Configure Your AI Companion</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/chat")}
+            className="text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-bold text-white">
+            {existingPreferences?.settings ? "Update" : "Configure"} Your AI Companion
+          </h1>
+        </div>
 
         <div className="rounded-lg bg-white/10 backdrop-blur-sm p-6">
           <Form {...form}>
@@ -118,8 +159,40 @@ export default function Settings() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="temperature"
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Response Variability</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <Slider
+                          {...field}
+                          value={[value ?? 50]}
+                          onValueChange={(vals) => onChange(vals[0])}
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="py-2"
+                        />
+                        <div className="flex justify-between text-sm text-white/70">
+                          <span>Consistent</span>
+                          <span>{value}%</span>
+                          <span>Creative</span>
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormDescription className="text-white/70">
+                      Adjust how varied and creative the AI's responses will be
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <Button type="submit" className="w-full bg-white/20 hover:bg-white/30 text-white" disabled={mutation.isPending}>
-                {mutation.isPending ? "Saving..." : "Create Companion"}
+                {mutation.isPending ? "Saving..." : existingPreferences?.settings ? "Update Companion" : "Create Companion"}
               </Button>
             </form>
           </Form>
