@@ -25,17 +25,22 @@ function useLoginMutation() {
 
   return useMutation({
     mutationFn: async (credentials: LoginData) => {
+      console.log("Attempting login...");
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      const data = await res.json();
+      console.log("Login response:", data);
+      return data;
     },
     onSuccess: (user: User) => {
+      console.log("Login successful, updating user data:", user);
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Welcome back!",
         description: "Successfully logged in",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: "Invalid username or password",
@@ -50,17 +55,20 @@ function useRegisterMutation() {
 
   return useMutation({
     mutationFn: async (data: InsertUser) => {
+      console.log("Attempting registration...");
       const res = await apiRequest("POST", "/api/register", data);
       return await res.json();
     },
     onSuccess: (user: User) => {
+      console.log("Registration successful, updating user data:", user);
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Welcome!",
         description: "Your account has been created",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: "Username already exists",
@@ -105,9 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
+        console.log("Fetching user data...");
         const res = await apiRequest("GET", "/api/user");
         if (res.status === 401) return null;
-        return await res.json();
+        const data = await res.json();
+        console.log("User data fetched:", data);
+        return data;
       } catch (error) {
         console.error("Error fetching user data:", error);
         return null; 

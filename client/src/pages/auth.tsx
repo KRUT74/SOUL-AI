@@ -18,7 +18,8 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      console.log("User authenticated, redirecting to /home");
+      setLocation("/home");
     }
   }, [user, setLocation]);
 
@@ -37,9 +38,11 @@ export default function Auth() {
       } else {
         await registerMutation.mutateAsync(data);
       }
-      setLocation("/");
+      console.log("Auth successful, user should be updated and trigger redirect");
+      setLocation("/home"); //Added redirect to /home after successful auth
     } catch (error) {
       // Error handling is done in the mutations
+      console.error("Auth error:", error);
     }
   };
 
