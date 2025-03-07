@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Message, Preferences } from "@shared/schema";
@@ -6,17 +6,19 @@ import { MessageBubble } from "@/components/chat/message-bubble";
 import { MessageInput } from "@/components/chat/message-input";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
 import { Button } from "@/components/ui/button";
-import { Settings, ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft, Home } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserMenu } from "@/components/user-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { VoiceSettingsDialog } from "@/components/chat/voice-settings-dialog";
 
 export default function Chat() {
   const [_, setLocation] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [voiceType, setVoiceType] = useState<"male" | "female">("male");
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id],
@@ -53,6 +55,14 @@ export default function Chat() {
     }
   }, [messages]);
 
+  const handleVoiceChange = (newVoice: "male" | "female") => {
+    setVoiceType(newVoice);
+    toast({
+      title: "Voice Updated",
+      description: `Voice type changed to ${newVoice}`,
+    });
+  };
+
   if (messagesLoading || preferencesLoading) {
     return <div className="flex h-screen items-center justify-center bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">Loading...</div>;
   }
@@ -76,9 +86,7 @@ export default function Chat() {
           </div>
           <h1 className="text-lg font-semibold text-white">{preferences.settings.name}</h1>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")} className="text-white hover:bg-white/20">
-              <Settings className="h-5 w-5" />
-            </Button>
+            <VoiceSettingsDialog currentVoice={voiceType} onVoiceChange={handleVoiceChange} />
             <UserMenu />
           </div>
         </div>
@@ -91,6 +99,7 @@ export default function Chat() {
               key={message.id}
               content={message.content}
               isUser={message.role === "user"}
+              voiceType={message.role === "assistant" ? voiceType : undefined}
             />
           ))}
           {messageMutation.isPending && <TypingIndicator />}

@@ -3,9 +3,10 @@ import { VoiceControls } from "./voice-controls";
 interface MessageBubbleProps {
   content: string;
   isUser: boolean;
+  voiceType?: "male" | "female";
 }
 
-export function MessageBubble({ content, isUser }: MessageBubbleProps) {
+export function MessageBubble({ content, isUser, voiceType }: MessageBubbleProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -18,7 +19,7 @@ export function MessageBubble({ content, isUser }: MessageBubbleProps) {
         <p className="whitespace-pre-wrap break-words">{content}</p>
         {!isUser && (
           <div className="mt-2 flex justify-end">
-            <VoiceControls textToSpeak={content} />
+            <VoiceControls textToSpeak={content} voiceType={voiceType} />
           </div>
         )}
       </div>
