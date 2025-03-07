@@ -19,12 +19,13 @@ function Router() {
       <ProtectedRoute path="/home" component={Home} />
       <ProtectedRoute path="/chat" component={Chat} />
       <ProtectedRoute path="/settings" component={Settings} />
-      <Route path="*" component={NotFound} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  console.log("App rendering..."); 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
