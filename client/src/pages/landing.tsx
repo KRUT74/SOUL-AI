@@ -1,43 +1,34 @@
+import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 
 export default function Landing() {
-  const [_, setLocation] = useLocation();
+  const [_, navigate] = useLocation();
 
-  // Simple and direct navigation handler
-  const handleClick = () => {
-    console.log('Navigating to auth page...');
-    setLocation("/auth");
+  const handleNavigation = () => {
+    console.log("Navigation triggered");
+    navigate("/auth");
   };
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center cursor-pointer"
-      onClick={handleClick}
-    >
+    <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex flex-col items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
         className="text-center"
       >
-        <motion.h1 
-          className="text-6xl md:text-8xl font-bold text-white tracking-wider"
-          initial={{ opacity: 0, letterSpacing: "0.2em" }}
-          animate={{ opacity: 1, letterSpacing: "0.3em" }}
-          transition={{ duration: 1 }}
-        >
+        <h1 className="text-6xl md:text-8xl font-bold text-white tracking-[0.3em] mb-8">
           SOULMATE AI
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.8 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="mt-4 text-white/80 text-lg"
+        </h1>
+        <Button 
+          onClick={handleNavigation}
+          variant="outline"
+          size="lg"
+          className="bg-white/20 hover:bg-white/30 text-white border-white/30"
         >
-          Click anywhere to begin
-        </motion.p>
+          Get Started
+        </Button>
       </motion.div>
     </div>
   );

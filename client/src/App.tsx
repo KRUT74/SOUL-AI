@@ -19,7 +19,7 @@ function Router() {
       <ProtectedRoute path="/home" component={Home} />
       <ProtectedRoute path="/chat" component={Chat} />
       <ProtectedRoute path="/settings" component={Settings} />
-      <Route component={NotFound} />
+      <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
 }
