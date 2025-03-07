@@ -11,9 +11,10 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Must be false in development
       httpOnly: true,
-      sameSite: "lax"
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   }));
 
@@ -36,7 +37,7 @@ export function setupAuth(app: Express) {
           return res.status(500).json({ error: "Failed to save session" });
         }
         console.log("User registered successfully:", { id: user.id, username: user.username });
-        res.status(201).json(user);
+        res.status(201).json({ id: user.id, username: user.username });
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -50,8 +51,11 @@ export function setupAuth(app: Express) {
 
     try {
       const { username, password } = req.body;
-      const user = await storage.getUserByUsername(username);
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
 
+      const user = await storage.getUserByUsername(username);
       console.log("Found user:", user ? { id: user.id, username: user.username } : "null");
 
       if (!user || user.password !== password) {
@@ -66,7 +70,7 @@ export function setupAuth(app: Express) {
           return res.status(500).json({ error: "Failed to save session" });
         }
         console.log("Login successful, session saved:", { userId: req.session.userId });
-        res.json(user);
+        res.json({ id: user.id, username: user.username });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -77,6 +81,10 @@ export function setupAuth(app: Express) {
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
     console.log("Logout request, destroying session");
+    if (!req.session.userId) {
+      return res.sendStatus(200); // Already logged out
+    }
+
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destruction error:", err);
@@ -90,22 +98,23 @@ export function setupAuth(app: Express) {
   app.get("/api/user", async (req, res) => {
     console.log("Get user request, session:", req.session);
 
-    if (!req.session.userId) {
-      console.log("No userId in session");
-      return res.sendStatus(401);
-    }
-
     try {
+      if (!req.session.userId) {
+        console.log("No userId in session");
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const user = await storage.getUserById(req.session.userId);
       if (!user) {
         console.log("User not found:", { id: req.session.userId });
-        return res.sendStatus(401);
+        return res.status(401).json({ error: "User not found" });
       }
+
       console.log("User found:", { id: user.id, username: user.username });
-      res.json(user);
+      res.json({ id: user.id, username: user.username });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.sendStatus(500);
+      res.status(500).json({ error: "Failed to fetch user data" });
     }
   });
 

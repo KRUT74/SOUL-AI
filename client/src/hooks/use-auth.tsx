@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 function useLoginMutation() {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
@@ -47,7 +47,7 @@ function useLoginMutation() {
 
 function useRegisterMutation() {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (data: InsertUser) => {
       const res = await apiRequest("POST", "/api/register", data);
@@ -72,7 +72,7 @@ function useRegisterMutation() {
 
 function useLogoutMutation() {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout");
@@ -96,7 +96,7 @@ function useLogoutMutation() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
+
   const {
     data: user,
     error,
@@ -109,12 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (res.status === 401) return null;
         return await res.json();
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch user data",
-          variant: "destructive",
-        });
-        throw error;
+        console.error("Error fetching user data:", error);
+        return null; 
       }
     },
   });
