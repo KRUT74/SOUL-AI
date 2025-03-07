@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 export default function Landing() {
   const [_, setLocation] = useLocation();
 
+  // Simple and direct navigation handler
   const handleClick = () => {
+    console.log('Navigating to auth page...');
     setLocation("/auth");
   };
 
