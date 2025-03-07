@@ -52,7 +52,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       // Initialize preferred voice with more aggressive male voice selection
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
-        console.log("Available voices:", voices); //Added for debugging
+        console.log("Available voices:", voices);
 
         // Try multiple patterns to find a male voice
         const maleVoice = voices.find(voice =>
@@ -62,9 +62,9 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
             voice.name.toLowerCase().includes('james') ||
             voice.name.toLowerCase().includes('john') ||
             voice.name.toLowerCase().includes('guy') ||
-            voice.name.toLowerCase().includes('mike') || //Added for more aggressive search
-            voice.name.toLowerCase().includes('tom') || //Added for more aggressive search
-            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male') //Added for regional variation
+            voice.name.toLowerCase().includes('mike') ||
+            voice.name.toLowerCase().includes('tom') ||
+            voice.name.toLowerCase().includes('en-gb') && voice.name.toLowerCase().includes('male')
           )
         );
 
@@ -72,14 +72,12 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
           console.log('Selected male voice:', maleVoice.name);
           setPreferredVoice(maleVoice);
         } else {
-          console.log("No suitable male voice found."); //Added for debugging
-          // Fallback to first English voice if no male voice found
+          console.log("No suitable male voice found.");
           const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
           setPreferredVoice(englishVoice || voices[0]);
         }
       };
 
-      // Ensure voices are loaded
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
       }
@@ -118,48 +116,62 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
       // Ensure any ongoing speech is cancelled
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      // Split text into smaller chunks at sentence boundaries
+      const chunks = textToSpeak.match(/[^.!?]+[.!?]+/g) || [textToSpeak];
+      let currentChunkIndex = 0;
 
-      // Configure speech parameters for better cadence
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-      utterance.rate = 0.9; // Slightly slower for better clarity
-      utterance.pitch = 1.0; // Natural pitch
-      utterance.volume = 1.0;
+      const speakNextChunk = () => {
+        if (currentChunkIndex < chunks.length) {
+          const chunk = chunks[currentChunkIndex];
+          const utterance = new SpeechSynthesisUtterance(chunk);
 
-      // Handle speech events
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        window.speechSynthesis.cancel(); // Ensure cleanup
-      };
+          // Configure speech parameters
+          if (preferredVoice) {
+            utterance.voice = preferredVoice;
+          }
+          utterance.rate = 0.9;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
 
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        toast({
-          title: "Error",
-          description: "Failed to speak the text. Please try again.",
-          variant: "destructive"
-        });
-      };
+          utterance.onend = () => {
+            currentChunkIndex++;
+            if (currentChunkIndex < chunks.length) {
+              // Small delay between chunks for natural pauses
+              setTimeout(speakNextChunk, 100);
+            } else {
+              setIsSpeaking(false);
+              window.speechSynthesis.cancel(); // Final cleanup
+            }
+          };
 
-      // Start speaking
-      setIsSpeaking(true);
-      window.speechSynthesis.speak(utterance);
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            toast({
+              title: "Error",
+              description: "Failed to speak the text. Please try again.",
+              variant: "destructive"
+            });
+          };
 
-      // Workaround for Chrome issue where speech can get cut off
-      const restartSpeechIfNeeded = () => {
-        if (isSpeaking && window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utterance);
         }
       };
 
-      // Check every second if speech needs to be resumed
-      const interval = setInterval(restartSpeechIfNeeded, 1000);
-      utterance.onend = () => {
-        clearInterval(interval);
-        setIsSpeaking(false);
-      };
+      setIsSpeaking(true);
+      speakNextChunk();
+
+      // Keep speech synthesis active
+      const keepAlive = setInterval(() => {
+        if (isSpeaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } else {
+          clearInterval(keepAlive);
+        }
+      }, 5000);
+
+      // Cleanup interval when speech ends
+      return () => clearInterval(keepAlive);
     } else {
       toast({
         title: "Error",
