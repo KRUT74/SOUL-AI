@@ -18,16 +18,17 @@ export async function generateResponse(
       ', '
     )}. Maintain this personality and knowledge of these interests throughout the conversation.`;
 
+    type MessageRole = 'user' | 'assistant';
     const response = await anthropic.messages.create({
       model: 'claude-3-7-sonnet-20250219',
       max_tokens: 1024,
       messages: [
-        { role: 'assistant', content: systemPrompt },
+        { role: 'assistant' as MessageRole, content: systemPrompt },
         ...context.map((msg, i) => ({
-          role: i % 2 === 0 ? 'user' : 'assistant',
+          role: (i % 2 === 0 ? 'user' : 'assistant') as MessageRole,
           content: msg
         })),
-        { role: 'user', content: message }
+        { role: 'user' as MessageRole, content: message }
       ],
       system: systemPrompt
     });

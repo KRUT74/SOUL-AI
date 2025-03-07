@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Message } from "@shared/schema";
+import { Message, Preferences } from "@shared/schema";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { MessageInput } from "@/components/chat/message-input";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
@@ -19,7 +19,7 @@ export default function Chat() {
     queryKey: ["/api/messages"]
   });
 
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const { data: preferences, isLoading: preferencesLoading } = useQuery<Preferences>({
     queryKey: ["/api/preferences"]
   });
 
@@ -52,7 +52,7 @@ export default function Chat() {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
-  if (!preferences) {
+  if (!preferences?.settings) {
     setLocation("/settings");
     return null;
   }
