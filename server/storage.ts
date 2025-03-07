@@ -1,7 +1,7 @@
 import { 
   Message, InsertMessage, 
   Companion, InsertCompanion,
-  User, InsertUser,
+  User, InsertUser
 } from "@shared/schema";
 
 export interface IStorage {
@@ -20,20 +20,30 @@ export interface IStorage {
   addMessage(message: InsertMessage): Promise<Message>;
 }
 
-// Simple in-memory storage for testing
 export class MemoryStorage implements IStorage {
-  private users: User[] = [];
-  private companions: Companion[] = [];
-  private messages: Message[] = [];
-  private nextUserId = 1;
-  private nextCompanionId = 1;
-  private nextMessageId = 1;
+  private users: Map<number, User>;
+  private companions: Map<number, Companion>;
+  private messages: Map<number, Message>;
+  private nextUserId: number;
+  private nextCompanionId: number;
+  private nextMessageId: number;
 
-  // User operations
+  constructor() {
+    this.users = new Map();
+    this.companions = new Map();
+    this.messages = new Map();
+    this.nextUserId = 1;
+    this.nextCompanionId = 1;
+    this.nextMessageId = 1;
+  }
+
   async createUser(userData: InsertUser): Promise<User> {
-    // Check if username exists
-    const existing = this.users.find(u => u.username === userData.username);
-    if (existing) {
+    // Check if username exists using case-insensitive comparison
+    const existingUser = Array.from(this.users.values()).find(
+      u => u.username.toLowerCase() === userData.username.toLowerCase()
+    );
+
+    if (existingUser) {
       throw new Error("Username already exists");
     }
 
@@ -41,28 +51,29 @@ export class MemoryStorage implements IStorage {
       id: this.nextUserId++,
       username: userData.username,
       password: userData.password,
-      createdAt: new Date(),
+      createdAt: new Date()
     };
 
-    this.users.push(user);
+    this.users.set(user.id, user);
     return user;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.find(u => u.id === id);
+    return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(u => u.username === username);
+    return Array.from(this.users.values()).find(
+      u => u.username.toLowerCase() === username.toLowerCase()
+    );
   }
 
-  // Companion operations
   async getCompanion(id: number): Promise<Companion | undefined> {
-    return this.companions.find(c => c.id === id);
+    return this.companions.get(id);
   }
 
   async getCompanionsByUserId(userId: number): Promise<Companion[]> {
-    return this.companions.filter(c => c.userId === userId);
+    return Array.from(this.companions.values()).filter(c => c.userId === userId);
   }
 
   async createCompanion(companionData: InsertCompanion): Promise<Companion> {
@@ -70,27 +81,28 @@ export class MemoryStorage implements IStorage {
       id: this.nextCompanionId++,
       userId: companionData.userId,
       settings: companionData.settings,
-      createdAt: new Date(),
+      createdAt: new Date()
     };
 
-    this.companions.push(companion);
+    this.companions.set(companion.id, companion);
     return companion;
   }
 
-  // Message operations
   async getMessagesByCompanionId(companionId: number): Promise<Message[]> {
-    return this.messages.filter(m => m.companionId === companionId);
+    return Array.from(this.messages.values())
+      .filter(m => m.companionId === companionId);
   }
 
   async addMessage(messageData: InsertMessage): Promise<Message> {
     const message: Message = {
       id: this.nextMessageId++,
-      ...messageData,
+      ...messageData
     };
 
-    this.messages.push(message);
+    this.messages.set(message.id, message);
     return message;
   }
 }
 
+// Create a single instance of the storage
 export const storage = new MemoryStorage();
