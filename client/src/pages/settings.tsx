@@ -44,72 +44,78 @@ export default function Settings() {
   });
 
   return (
-    <div className="container max-w-2xl py-10">
-      <h1 className="mb-8 text-3xl font-bold">Configure Your AI Companion</h1>
+    <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
+      <div className="container max-w-2xl py-10">
+        <h1 className="mb-8 text-3xl font-bold text-white">Configure Your AI Companion</h1>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Give your companion a name" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="rounded-lg bg-white/10 backdrop-blur-sm p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Give your companion a name" className="bg-white/20 border-white/20 text-white placeholder:text-white/70" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="personality"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Personality</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="Describe your companion's personality"
-                  />
-                </FormControl>
-                <FormDescription>
-                  What kind of personality should your companion have?
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={form.control}
+                name="personality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Personality</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Describe your companion's personality"
+                        className="bg-white/20 border-white/20 text-white placeholder:text-white/70"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-white/70">
+                      What kind of personality should your companion have?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="interests"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Interests</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="Enter interests separated by commas"
-                    onChange={(e) => field.onChange(e.target.value.split(",").map((i) => i.trim()))}
-                    value={field.value?.join(", ")}
-                  />
-                </FormControl>
-                <FormDescription>
-                  What topics should your companion be knowledgeable about?
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={form.control}
+                name="interests"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Interests</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter interests separated by commas"
+                        onChange={(e) => field.onChange(e.target.value.split(",").map((i) => i.trim()))}
+                        value={field.value?.join(", ")}
+                        className="bg-white/20 border-white/20 text-white placeholder:text-white/70"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-white/70">
+                      What topics should your companion be knowledgeable about?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Create Companion"}
-          </Button>
-        </form>
-      </Form>
+              <Button type="submit" className="w-full bg-white/20 hover:bg-white/30 text-white" disabled={mutation.isPending}>
+                {mutation.isPending ? "Saving..." : "Create Companion"}
+              </Button>
+            </form>
+          </Form>
+        </div>
+      </div>
     </div>
   );
 }

@@ -49,7 +49,7 @@ export default function Chat() {
   }, [messages]);
 
   if (messagesLoading || preferencesLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">Loading...</div>;
   }
 
   if (!preferences?.settings) {
@@ -58,14 +58,14 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="border-b bg-card px-4 py-3">
+    <div className="flex h-screen flex-col bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">
+      <header className="border-b bg-white/10 backdrop-blur-sm px-4 py-3">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-white hover:bg-white/20">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold">{preferences.settings.name}</h1>
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")}>
+          <h1 className="text-lg font-semibold text-white">{preferences.settings.name}</h1>
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")} className="text-white hover:bg-white/20">
             <Settings className="h-5 w-5" />
           </Button>
         </div>
@@ -85,7 +85,7 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="border-t bg-card p-4">
+      <div className="border-t bg-white/10 backdrop-blur-sm p-4">
         <MessageInput
           onSend={(content) => messageMutation.mutate(content)}
           disabled={messageMutation.isPending}
