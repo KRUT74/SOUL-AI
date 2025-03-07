@@ -139,7 +139,7 @@ export function VoiceControls({ onVoiceInput, textToSpeak, disabled }: VoiceCont
         toast({
           title: "Error",
           description: "Failed to speak the text. Please try again.",
-          variant: "destructive",
+          variant: "destructive"
         });
       };
 
