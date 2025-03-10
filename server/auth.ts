@@ -1,4 +1,3 @@
-
 import { Express, Request, Response } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -39,10 +38,13 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username and password are required" });
       }
 
+      // Format email if not provided in email format
+      const email = username.includes('@') ? username : `${username}@example.com`;
+
       // Create user with Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       // Store user session
       req.session.userId = user.uid;
       req.session.save((err) => {
@@ -55,7 +57,15 @@ export function setupAuth(app: Express) {
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(500).json({ error: error.message || "Registration failed" });
+      let errorMessage = "Registration failed";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Username already exists";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password is too weak";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format";
+      }
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -69,10 +79,13 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username and password are required" });
       }
 
+      // Format email if not provided in email format
+      const email = username.includes('@') ? username : `${username}@example.com`;
+
       // Sign in with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, username, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       req.session.userId = user.uid;
       req.session.save((err) => {
         if (err) {
@@ -84,17 +97,23 @@ export function setupAuth(app: Express) {
       });
     } catch (error: any) {
       console.error("Login error:", error);
-      res.status(401).json({ error: error.message || "Invalid credentials" });
+      let errorMessage = "Invalid credentials";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Invalid username or password";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format";
+      }
+      res.status(401).json({ error: errorMessage });
     }
   });
 
   // Logout endpoint
   app.post("/api/logout", async (req, res) => {
     console.log("Logout request, destroying session");
-    
+
     try {
       await signOut(auth);
-      
+
       req.session.destroy((err) => {
         if (err) {
           console.error("Session destruction error:", err);
