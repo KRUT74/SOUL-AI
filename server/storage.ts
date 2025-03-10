@@ -1,156 +1,151 @@
-import { eq } from 'drizzle-orm';
-import { db } from './db';
-import { users, companions, messages } from '@shared/schema';
-import type { User, InsertUser, CompanionSettings, Message } from '@shared/schema';
-import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
-import { promisify } from 'util';
 
-const scryptAsync = promisify(scrypt);
+import { adminFirestore } from "./firebase";
+import * as bcrypt from "bcrypt";
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString('hex');
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString('hex')}.${salt}`;
-}
+// Collections
+const usersCollection = adminFirestore.collection("users");
+const companionsCollection = adminFirestore.collection("companions");
+const messagesCollection = adminFirestore.collection("messages");
 
-async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split('.');
-  const hashedBuf = Buffer.from(hashed, 'hex');
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
-}
-
-export interface IStorage {
-  createUser(user: InsertUser): Promise<User>;
-  getUserById(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getPreferences(userId: number): Promise<{ settings: CompanionSettings } | undefined>;
-  setPreferences(userId: number, prefs: { settings: CompanionSettings }): Promise<{ settings: CompanionSettings }>;
-  getMessages(userId: number): Promise<Message[]>;
-  addMessage(userId: number, message: Omit<Message, "id">): Promise<Message>;
-}
-
-class DatabaseStorage implements IStorage {
-  async createUser(userData: InsertUser): Promise<User> {
-    const hashedPassword = await hashPassword(userData.password);
-
-    const [user] = await db.insert(users)
-      .values({
-        username: userData.username,
-        password: hashedPassword,
-      })
-      .returning({
-        id: users.id,
-        username: users.username,
-        createdAt: users.createdAt,
-      });
-
-    console.log('Created user:', { id: user.id, username: user.username });
-    return user;
-  }
-
-  async getUserById(id: number): Promise<User | undefined> {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, id),
-      columns: {
-        id: true,
-        username: true,
-        createdAt: true,
-      },
+// User operations
+export const storage = {
+  // User CRUD operations
+  async createUser({ username, password }: { username: string; password: string }) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const userDoc = await usersCollection.add({
+      username,
+      password: hashedPassword,
+      createdAt: Date.now()
     });
-
-    console.log(`Looking up user by id ${id}:`, user ? { id: user.id, username: user.username } : 'not found');
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<(User & { password: string }) | undefined> {
-    const user = await db.query.users.findFirst({
-      where: eq(users.username, username),
-    });
-
-    console.log(`Looking up user by username ${username}:`, user ? { id: user.id, username: user.username } : 'not found');
-    return user || undefined;
-  }
-
-  async getPreferences(userId: number): Promise<{ settings: CompanionSettings } | undefined> {
-    const companion = await db.query.companions.findFirst({
-      where: eq(companions.userId, userId),
-    });
-
-    if (!companion) return undefined;
-
-    return {
-      settings: {
-        name: companion.name,
-        personality: companion.personality,
-        interests: companion.interests,
-        avatar: companion.avatar,
-      }
+    
+    return { 
+      id: userDoc.id, 
+      username,
+      createdAt: new Date()
     };
-  }
-
-  async setPreferences(userId: number, prefs: { settings: CompanionSettings }): Promise<{ settings: CompanionSettings }> {
-    const { settings } = prefs;
-
-    // Delete existing companion if any
-    await db.delete(companions)
-      .where(eq(companions.userId, userId));
-
-    // Create new companion
-    await db.insert(companions)
-      .values({
-        userId,
-        name: settings.name,
-        personality: settings.personality,
-        interests: settings.interests,
-        avatar: settings.avatar,
-      });
-
-    console.log('Saved preferences for user:', userId);
-    return prefs;
-  }
-
-  async getMessages(userId: number): Promise<Message[]> {
-    console.log('Fetching messages for user:', userId);
-    const dbMessages = await db.query.messages.findMany({
-      where: eq(messages.userId, userId),
-      orderBy: (messages, { asc }) => [asc(messages.timestamp)],
-    });
-
-    console.log(`Found ${dbMessages.length} messages for user ${userId}`);
-    return dbMessages.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      role: msg.role as "user" | "assistant",
-      timestamp: msg.timestamp,
-    }));
-  }
-
-  async addMessage(userId: number, messageData: Omit<Message, "id">): Promise<Message> {
-    console.log('Adding message for user:', userId);
-    const [message] = await db.insert(messages)
-      .values({
-        userId,
-        content: messageData.content,
-        role: messageData.role,
-        timestamp: messageData.timestamp,
-      })
-      .returning();
-
-    console.log('Added message:', message);
+  },
+  
+  async getUserByUsername(username: string) {
+    const snapshot = await usersCollection.where("username", "==", username).limit(1).get();
+    
+    if (snapshot.empty) return null;
+    
+    const userData = snapshot.docs[0].data();
     return {
-      id: message.id,
-      content: message.content,
-      role: message.role as "user" | "assistant",
-      timestamp: message.timestamp,
+      id: snapshot.docs[0].id,
+      username: userData.username,
+      password: userData.password,
+      createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date()
     };
-  }
-
-  async verifyPassword(username: string, password: string): Promise<boolean> {
+  },
+  
+  async getUserById(id: string) {
+    const doc = await usersCollection.doc(id).get();
+    
+    if (!doc.exists) return null;
+    
+    const userData = doc.data();
+    return {
+      id: doc.id,
+      username: userData?.username,
+      createdAt: userData?.createdAt ? new Date(userData.createdAt) : new Date()
+    };
+  },
+  
+  async verifyPassword(username: string, password: string) {
     const user = await this.getUserByUsername(username);
     if (!user) return false;
-    return comparePasswords(password, user.password);
+    
+    return bcrypt.compare(password, user.password);
+  },
+  
+  // Companion CRUD operations
+  async createCompanion({ userId, name, personality, interests, avatar }: { 
+    userId: string; 
+    name: string; 
+    personality: string; 
+    interests: string[]; 
+    avatar?: string;
+  }) {
+    const companionDoc = await companionsCollection.add({
+      userId,
+      name,
+      personality,
+      interests,
+      avatar: avatar || null,
+      createdAt: Date.now()
+    });
+    
+    return { 
+      id: companionDoc.id, 
+      userId,
+      name,
+      personality,
+      interests,
+      avatar: avatar || null,
+      createdAt: new Date()
+    };
+  },
+  
+  async getCompanionsByUserId(userId: string) {
+    const snapshot = await companionsCollection.where("userId", "==", userId).get();
+    
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        name: data.name,
+        personality: data.personality,
+        interests: data.interests,
+        avatar: data.avatar,
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
+      };
+    });
+  },
+  
+  // Message CRUD operations
+  async createMessage({ userId, content, role, timestamp }: {
+    userId: string;
+    content: string;
+    role: 'user' | 'assistant';
+    timestamp: number;
+  }) {
+    const messageDoc = await messagesCollection.add({
+      userId,
+      content,
+      role,
+      timestamp,
+      createdAt: Date.now()
+    });
+    
+    return {
+      id: messageDoc.id,
+      userId,
+      content,
+      role,
+      timestamp,
+      createdAt: new Date()
+    };
+  },
+  
+  async getMessagesByUserId(userId: string) {
+    const snapshot = await messagesCollection
+      .where("userId", "==", userId)
+      .orderBy("timestamp", "asc")
+      .get();
+    
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        content: data.content,
+        role: data.role,
+        timestamp: data.timestamp,
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
+      };
+    });
   }
-}
-
-export const storage = new DatabaseStorage();
+};
