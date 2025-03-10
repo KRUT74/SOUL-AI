@@ -93,31 +93,39 @@ export function setupAuth(app: Express) {
   app.post("/api/auth/google", async (req: Request, res: Response) => {
     try {
       const provider = new GoogleAuthProvider();
+      provider.addScope('email');
       await signInWithRedirect(auth, provider);
 
-      const result = await getRedirectResult(auth);
-      if (result) {
-        const user = result.user;
-        const username = user.email?.split('@')[0] || user.email;
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const user = result.user;
+          const username = user.email?.split('@')[0] || user.email;
 
-        // Store user session
-        req.session.userId = user.uid;
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err) => {
-            if (err) reject(err);
-            else resolve();
+          // Store user session
+          req.session.userId = user.uid;
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err) => {
+              if (err) reject(err);
+              else resolve();
+            });
           });
-        });
 
-        console.log("Google sign-in successful:", { id: user.uid, username });
-        res.json({ id: user.uid, username });
-      } else {
-        res.status(400).json({ error: "Google sign-in failed" });
+          console.log("Google sign-in successful:", { id: user.uid, username });
+          res.json({ id: user.uid, username });
+        } else {
+          res.status(400).json({ error: "Google sign-in failed - No result" });
+        }
+      } catch (redirectError: any) {
+        console.error("Google redirect error:", redirectError);
+        res.status(400).json({ 
+          error: redirectError.message || "Failed to complete Google sign-in" 
+        });
       }
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       res.status(400).json({ 
-        error: error.message || "Failed to sign in with Google" 
+        error: error.message || "Failed to initiate Google sign-in" 
       });
     }
   });

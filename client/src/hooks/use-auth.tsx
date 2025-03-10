@@ -68,7 +68,6 @@ function useRegisterMutation() {
     },
     onSuccess: (user: User) => {
       console.log("Registration successful, updating user data:", user);
-      // Clear all queries before setting new user data
       queryClient.removeQueries();
       queryClient.setQueryData(["/api/user"], user);
       toast({
@@ -158,16 +157,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       try {
         console.log("Fetching user data...");
-        const res = await apiRequest("GET", "/api/user");
-        if (res.status === 401) return null;
+        const res = await fetch("/api/user", {
+          credentials: "include",
+        });
+
+        // Return null for 401 responses
+        if (res.status === 401) {
+          return null;
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+
         const data = await res.json();
         console.log("User data fetched:", data);
         return data;
       } catch (error) {
         console.error("Error fetching user data:", error);
-        return null; 
+        throw error;
       }
     },
+    retry: 0, // Don't retry failed requests
     staleTime: 0, // Ensure fresh data on mount
   });
 
