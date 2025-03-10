@@ -51,7 +51,7 @@ export function setupAuth(app: Express) {
           });
         });
 
-        console.log("User registered successfully:", { id: user.uid, username: email });
+        console.log("User registered successfully:", { id: user.uid, username });
         res.status(201).json({ id: user.uid, username });
       } catch (firebaseError: any) {
         console.error("Firebase registration error:", firebaseError);
@@ -66,6 +66,9 @@ export function setupAuth(app: Express) {
             break;
           case 'auth/weak-password':
             errorMessage = "Password must be at least 6 characters";
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = "Email/Password authentication is not enabled in Firebase Console";
             break;
           default:
             errorMessage = firebaseError.message || "Failed to create account";
@@ -114,6 +117,9 @@ export function setupAuth(app: Express) {
             break;
           case 'auth/invalid-email':
             errorMessage = "Invalid username format";
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = "Email/Password authentication is not enabled in Firebase Console";
             break;
           default:
             errorMessage = firebaseError.message || "Login failed";
