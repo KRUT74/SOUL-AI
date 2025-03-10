@@ -2,17 +2,30 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Landing() {
   const [_, setLocation] = useLocation();
   const { user, isLoading } = useAuth();
 
+  // Check if user has configured preferences
+  const { data: preferences } = useQuery({
+    queryKey: ["/api/preferences", user?.id],
+    enabled: !!user,
+  });
+
   useEffect(() => {
     if (user) {
-      console.log("User is authenticated, redirecting to /home");
-      setLocation("/home");
+      // If user has no preferences, send to settings page
+      if (!preferences?.settings) {
+        console.log("User has no companion configured, redirecting to /settings");
+        setLocation("/settings");
+      } else {
+        console.log("User has companion configured, redirecting to /home");
+        setLocation("/home");
+      }
     }
-  }, [user, setLocation]);
+  }, [user, preferences, setLocation]);
 
   if (isLoading) {
     return (

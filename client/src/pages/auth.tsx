@@ -20,8 +20,8 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      console.log("User authenticated, redirecting to /home");
-      setLocation("/home");
+      console.log("User authenticated, redirecting to /settings");
+      setLocation("/settings");
     }
   }, [user, setLocation]);
 
@@ -40,7 +40,7 @@ export default function Auth() {
       } else {
         await registerMutation.mutateAsync(data);
       }
-      setLocation("/home");
+      setLocation("/settings");
     } catch (error) {
       console.error("Auth error:", error);
       form.reset({ password: "" });
@@ -50,7 +50,7 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
-      setLocation("/home");
+      setLocation("/settings");
     } catch (error) {
       console.error("Google sign-in error:", error);
     }
