@@ -1,7 +1,26 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Landing() {
-  console.log("Landing page rendering..."); 
+  const [_, setLocation] = useLocation();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      console.log("User is authenticated, redirecting to /home");
+      setLocation("/home");
+    }
+  }, [user, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600">

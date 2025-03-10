@@ -163,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Return null for 401 responses
         if (res.status === 401) {
+          console.log("User not authenticated");
           return null;
         }
 
