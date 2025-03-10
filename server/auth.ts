@@ -16,7 +16,7 @@ export function setupAuth(app: Express) {
       pool,
       createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "dev-secret",
+    secret: process.env.SESSION_SECRET || 'dev-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -27,18 +27,14 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  // Register endpoint with Firebase
+  // Register endpoint
   app.post("/api/register", async (req: Request, res: Response) => {
-    console.log("Registration attempt with body:", req.body);
-
     try {
       const { username, password } = req.body;
       if (!username || !password) {
-        console.log("Registration failed: Missing credentials");
         return res.status(400).json({ error: "Username and password are required" });
       }
 
-      // Format email if not provided in email format
       const email = username.includes('@') ? username : `${username}@soulmate.ai`;
 
       try {
@@ -50,16 +46,13 @@ export function setupAuth(app: Express) {
         req.session.userId = user.uid;
         await new Promise<void>((resolve, reject) => {
           req.session.save((err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
+            if (err) reject(err);
+            else resolve();
           });
         });
 
         console.log("User registered successfully:", { id: user.uid, username: email });
-        res.status(201).json({ id: user.uid, username: email });
+        res.status(201).json({ id: user.uid, username });
       } catch (firebaseError: any) {
         console.error("Firebase registration error:", firebaseError);
         let errorMessage = "Registration failed";
@@ -75,7 +68,7 @@ export function setupAuth(app: Express) {
             errorMessage = "Password must be at least 6 characters";
             break;
           default:
-            errorMessage = "Failed to create account";
+            errorMessage = firebaseError.message || "Failed to create account";
         }
 
         res.status(400).json({ error: errorMessage });
@@ -86,37 +79,30 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login endpoint with Firebase
+  // Login endpoint
   app.post("/api/login", async (req: Request, res: Response) => {
-    console.log("Login attempt with body:", req.body);
-
     try {
       const { username, password } = req.body;
       if (!username || !password) {
         return res.status(400).json({ error: "Username and password are required" });
       }
 
-      // Format email if not provided in email format
       const email = username.includes('@') ? username : `${username}@soulmate.ai`;
 
       try {
-        // Sign in with Firebase
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
         req.session.userId = user.uid;
         await new Promise<void>((resolve, reject) => {
           req.session.save((err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
+            if (err) reject(err);
+            else resolve();
           });
         });
 
-        console.log("Login successful:", { id: user.uid, username: email });
-        res.json({ id: user.uid, username: email });
+        console.log("Login successful:", { id: user.uid, username });
+        res.json({ id: user.uid, username });
       } catch (firebaseError: any) {
         console.error("Firebase login error:", firebaseError);
         let errorMessage = "Invalid credentials";
@@ -130,7 +116,7 @@ export function setupAuth(app: Express) {
             errorMessage = "Invalid username format";
             break;
           default:
-            errorMessage = "Login failed";
+            errorMessage = firebaseError.message || "Login failed";
         }
 
         res.status(401).json({ error: errorMessage });
@@ -143,8 +129,6 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", async (req: Request, res: Response) => {
-    console.log("Logout request received");
-
     try {
       await signOut(auth);
       req.session.destroy((err) => {
@@ -162,19 +146,16 @@ export function setupAuth(app: Express) {
 
   // Get current user endpoint
   app.get("/api/user", async (req: Request, res: Response) => {
-    console.log("Get user request, session:", req.session);
-
     try {
       if (!req.session.userId) {
-        console.log("No userId in session");
         return res.status(401).json({ error: "Not authenticated" });
       }
 
       try {
-        // Get user from Firebase Admin
         const user = await adminAuth.getUser(req.session.userId);
-        console.log("User found:", { id: user.uid, username: user.email });
-        res.json({ id: user.uid, username: user.email });
+        const username = user.email?.split('@')[0] || user.email;
+        console.log("User found:", { id: user.uid, username });
+        res.json({ id: user.uid, username });
       } catch (firebaseError) {
         console.error("Firebase get user error:", firebaseError);
         res.status(401).json({ error: "User not found" });
