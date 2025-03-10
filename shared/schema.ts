@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 
 // Database schema
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
+  id: text('id').primaryKey(), // Changed to text for Firebase UID
   username: text('username').notNull().unique(),
   password: text('password').notNull(),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -13,7 +13,7 @@ export const users = pgTable('users', {
 
 export const companions = pgTable('companions', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull(),
+  userId: text('user_id').references(() => users.id).notNull(), // Changed to text for Firebase UID
   name: text('name').notNull(),
   personality: text('personality').notNull(),
   interests: text('interests').array().notNull(),
@@ -23,7 +23,7 @@ export const companions = pgTable('companions', {
 
 export const messages = pgTable('messages', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull(),
+  userId: text('user_id').references(() => users.id).notNull(), // Changed to text for Firebase UID
   content: text('content').notNull(),
   role: text('role', { enum: ['user', 'assistant'] }).notNull(),
   timestamp: integer('timestamp').notNull(),

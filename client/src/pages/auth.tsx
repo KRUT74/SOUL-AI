@@ -42,6 +42,7 @@ export default function Auth() {
       setLocation("/home");
     } catch (error) {
       console.error("Auth error:", error);
+      form.reset({ password: "" });
     }
   };
 
@@ -113,7 +114,10 @@ export default function Auth() {
                   type="button"
                   variant="ghost"
                   className="w-full text-white hover:bg-white/20"
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    form.reset();
+                  }}
                 >
                   {isLogin ? "Need an account? Register" : "Already have an account? Login"}
                 </Button>

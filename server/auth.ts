@@ -10,7 +10,7 @@ export function setupAuth(app: Express) {
 
   const PostgresStore = connectPg(session);
 
-  // Session setup with PostgreSQL store (keeping for session management)
+  // Session setup with PostgreSQL store
   app.use(session({
     store: new PostgresStore({
       pool,
@@ -28,7 +28,7 @@ export function setupAuth(app: Express) {
   }));
 
   // Register endpoint with Firebase
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", async (req: Request, res: Response) => {
     console.log("Registration attempt with body:", req.body);
 
     try {
@@ -39,38 +39,55 @@ export function setupAuth(app: Express) {
       }
 
       // Format email if not provided in email format
-      const email = username.includes('@') ? username : `${username}@example.com`;
+      const email = username.includes('@') ? username : `${username}@soulmate.ai`;
 
-      // Create user with Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      try {
+        // Create user with Firebase
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      // Store user session
-      req.session.userId = user.uid;
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ error: "Failed to save session" });
+        // Store user session
+        req.session.userId = user.uid;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+
+        console.log("User registered successfully:", { id: user.uid, username: email });
+        res.status(201).json({ id: user.uid, username: email });
+      } catch (firebaseError: any) {
+        console.error("Firebase registration error:", firebaseError);
+        let errorMessage = "Registration failed";
+
+        switch (firebaseError.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "Username already exists";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Invalid username format";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "Password must be at least 6 characters";
+            break;
+          default:
+            errorMessage = "Failed to create account";
         }
-        console.log("User registered successfully:", { id: user.uid, username: user.email });
-        res.status(201).json({ id: user.uid, username: user.email });
-      });
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      let errorMessage = "Registration failed";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "Username already exists";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "Password is too weak";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format";
+
+        res.status(400).json({ error: errorMessage });
       }
-      res.status(400).json({ error: errorMessage });
+    } catch (error) {
+      console.error("Server error during registration:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
   // Login endpoint with Firebase
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/login", async (req: Request, res: Response) => {
     console.log("Login attempt with body:", req.body);
 
     try {
@@ -80,40 +97,56 @@ export function setupAuth(app: Express) {
       }
 
       // Format email if not provided in email format
-      const email = username.includes('@') ? username : `${username}@example.com`;
+      const email = username.includes('@') ? username : `${username}@soulmate.ai`;
 
-      // Sign in with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      try {
+        // Sign in with Firebase
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      req.session.userId = user.uid;
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ error: "Failed to save session" });
+        req.session.userId = user.uid;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+
+        console.log("Login successful:", { id: user.uid, username: email });
+        res.json({ id: user.uid, username: email });
+      } catch (firebaseError: any) {
+        console.error("Firebase login error:", firebaseError);
+        let errorMessage = "Invalid credentials";
+
+        switch (firebaseError.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = "Invalid username or password";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Invalid username format";
+            break;
+          default:
+            errorMessage = "Login failed";
         }
-        console.log("Login successful, session saved:", { userId: req.session.userId });
-        res.json({ id: user.uid, username: user.email });
-      });
-    } catch (error: any) {
-      console.error("Login error:", error);
-      let errorMessage = "Invalid credentials";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Invalid username or password";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format";
+
+        res.status(401).json({ error: errorMessage });
       }
-      res.status(401).json({ error: errorMessage });
+    } catch (error) {
+      console.error("Server error during login:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
   // Logout endpoint
-  app.post("/api/logout", async (req, res) => {
-    console.log("Logout request, destroying session");
+  app.post("/api/logout", async (req: Request, res: Response) => {
+    console.log("Logout request received");
 
     try {
       await signOut(auth);
-
       req.session.destroy((err) => {
         if (err) {
           console.error("Session destruction error:", err);
@@ -121,14 +154,14 @@ export function setupAuth(app: Express) {
         }
         res.sendStatus(200);
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Logout error:", error);
-      res.status(500).json({ error: error.message || "Failed to logout" });
+      res.status(500).json({ error: "Failed to logout" });
     }
   });
 
   // Get current user endpoint
-  app.get("/api/user", async (req, res) => {
+  app.get("/api/user", async (req: Request, res: Response) => {
     console.log("Get user request, session:", req.session);
 
     try {
@@ -137,18 +170,18 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      // Get user from Firebase Admin
-      const user = await adminAuth.getUser(req.session.userId);
-      if (!user) {
-        console.log("User not found:", { id: req.session.userId });
-        return res.status(401).json({ error: "User not found" });
+      try {
+        // Get user from Firebase Admin
+        const user = await adminAuth.getUser(req.session.userId);
+        console.log("User found:", { id: user.uid, username: user.email });
+        res.json({ id: user.uid, username: user.email });
+      } catch (firebaseError) {
+        console.error("Firebase get user error:", firebaseError);
+        res.status(401).json({ error: "User not found" });
       }
-
-      console.log("User found:", { id: user.uid, username: user.email });
-      res.json({ id: user.uid, username: user.email });
-    } catch (error: any) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch user data" });
+    } catch (error) {
+      console.error("Server error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user data" });
     }
   });
 

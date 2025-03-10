@@ -41,11 +41,11 @@ function useLoginMutation() {
         description: "Successfully logged in",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "Invalid username or password",
+        description: error.message || "Invalid username or password",
         variant: "destructive",
       });
     },
@@ -59,6 +59,10 @@ function useRegisterMutation() {
     mutationFn: async (data: InsertUser) => {
       console.log("Attempting registration...");
       const res = await apiRequest("POST", "/api/register", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Registration failed");
+      }
       return await res.json();
     },
     onSuccess: (user: User) => {
@@ -71,11 +75,11 @@ function useRegisterMutation() {
         description: "Your account has been created",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "Username already exists",
+        description: error.message || "Username already exists",
         variant: "destructive",
       });
     },
