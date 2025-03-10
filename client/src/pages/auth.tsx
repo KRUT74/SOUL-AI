@@ -40,6 +40,7 @@ export default function Auth() {
       } else {
         await registerMutation.mutateAsync(data);
       }
+      console.log("Authentication successful, redirecting to /settings");
       setLocation("/settings");
     } catch (error) {
       console.error("Auth error:", error);
@@ -50,6 +51,7 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     try {
       await googleSignInMutation.mutateAsync();
+      console.log("Google sign-in successful, redirecting to /settings");
       setLocation("/settings");
     } catch (error) {
       console.error("Google sign-in error:", error);

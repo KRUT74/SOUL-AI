@@ -34,7 +34,6 @@ function useLoginMutation() {
     },
     onSuccess: (user: User) => {
       console.log("Login successful, updating user data:", user);
-      // Clear all queries before setting new user data
       queryClient.removeQueries();
       queryClient.setQueryData(["/api/user"], user);
       toast({
