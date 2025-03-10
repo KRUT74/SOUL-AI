@@ -3,7 +3,14 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 import { auth, adminAuth } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  getRedirectResult
+} from "firebase/auth";
 
 export function setupAuth(app: Express) {
   console.log("Setting up Firebase authentication...");
@@ -79,6 +86,39 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error("Server error during registration:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Google sign-in endpoint
+  app.post("/api/auth/google", async (req: Request, res: Response) => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithRedirect(auth, provider);
+
+      const result = await getRedirectResult(auth);
+      if (result) {
+        const user = result.user;
+        const username = user.email?.split('@')[0] || user.email;
+
+        // Store user session
+        req.session.userId = user.uid;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+
+        console.log("Google sign-in successful:", { id: user.uid, username });
+        res.json({ id: user.uid, username });
+      } else {
+        res.status(400).json({ error: "Google sign-in failed" });
+      }
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      res.status(400).json({ 
+        error: error.message || "Failed to sign in with Google" 
+      });
     }
   });
 

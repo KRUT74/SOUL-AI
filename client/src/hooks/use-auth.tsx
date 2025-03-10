@@ -14,6 +14,7 @@ type AuthContextType = {
   loginMutation: ReturnType<typeof useLoginMutation>;
   logoutMutation: ReturnType<typeof useLogoutMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
+  googleSignInMutation: ReturnType<typeof useGoogleSignInMutation>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -86,6 +87,39 @@ function useRegisterMutation() {
   });
 }
 
+function useGoogleSignInMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async () => {
+      console.log("Attempting Google sign-in...");
+      const res = await apiRequest("POST", "/api/auth/google");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Google sign-in failed");
+      }
+      return await res.json();
+    },
+    onSuccess: (user: User) => {
+      console.log("Google sign-in successful, updating user data:", user);
+      queryClient.removeQueries();
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "Welcome!",
+        description: "Successfully signed in with Google",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Google sign-in error:", error);
+      toast({
+        title: "Sign-in failed",
+        description: error.message || "Failed to sign in with Google",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 function useLogoutMutation() {
   const { toast } = useToast();
 
@@ -140,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
   const logoutMutation = useLogoutMutation();
+  const googleSignInMutation = useGoogleSignInMutation();
 
   return (
     <AuthContext.Provider
@@ -150,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         registerMutation,
         logoutMutation,
+        googleSignInMutation,
       }}
     >
       {children}

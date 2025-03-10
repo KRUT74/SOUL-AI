@@ -9,12 +9,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { insertUserSchema, type InsertUser } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation, registerMutation, googleSignInMutation } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -46,7 +47,18 @@ export default function Auth() {
     }
   };
 
-  if (loginMutation.isPending || registerMutation.isPending) {
+  const handleGoogleSignIn = async () => {
+    try {
+      await googleSignInMutation.mutateAsync();
+      setLocation("/home");
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+    }
+  };
+
+  const isLoading = loginMutation.isPending || registerMutation.isPending || googleSignInMutation.isPending;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-emerald-400 via-teal-500 to-blue-600 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -105,9 +117,29 @@ export default function Auth() {
                 <Button 
                   type="submit" 
                   className="w-full bg-white/20 hover:bg-white/30 text-white" 
-                  disabled={loginMutation.isPending || registerMutation.isPending}
+                  disabled={isLoading}
                 >
                   {isLogin ? "Login" : "Create Account"}
+                </Button>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/20"></span>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="bg-transparent px-2 text-white/70">Or continue with</span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                  className="w-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center gap-2"
+                >
+                  <SiGoogle className="h-5 w-5" />
+                  Sign in with Google
                 </Button>
 
                 <Button
