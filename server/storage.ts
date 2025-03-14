@@ -1,6 +1,8 @@
-
 import { adminFirestore } from "./firebase";
 import * as bcrypt from "bcrypt";
+import { db } from "./db";
+import { companions } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // Collections
 const usersCollection = adminFirestore.collection("users");
@@ -12,25 +14,25 @@ export const storage = {
   // User CRUD operations
   async createUser({ username, password }: { username: string; password: string }) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const userDoc = await usersCollection.add({
       username,
       password: hashedPassword,
       createdAt: Date.now()
     });
-    
+
     return { 
       id: userDoc.id, 
       username,
       createdAt: new Date()
     };
   },
-  
+
   async getUserByUsername(username: string) {
     const snapshot = await usersCollection.where("username", "==", username).limit(1).get();
-    
+
     if (snapshot.empty) return null;
-    
+
     const userData = snapshot.docs[0].data();
     return {
       id: snapshot.docs[0].id,
@@ -39,12 +41,12 @@ export const storage = {
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date()
     };
   },
-  
+
   async getUserById(id: string) {
     const doc = await usersCollection.doc(id).get();
-    
+
     if (!doc.exists) return null;
-    
+
     const userData = doc.data();
     return {
       id: doc.id,
@@ -52,14 +54,14 @@ export const storage = {
       createdAt: userData?.createdAt ? new Date(userData.createdAt) : new Date()
     };
   },
-  
+
   async verifyPassword(username: string, password: string) {
     const user = await this.getUserByUsername(username);
     if (!user) return false;
-    
+
     return bcrypt.compare(password, user.password);
   },
-  
+
   // Companion CRUD operations
   async createCompanion({ userId, name, personality, interests, avatar }: { 
     userId: string; 
@@ -76,7 +78,7 @@ export const storage = {
       avatar: avatar || null,
       createdAt: Date.now()
     });
-    
+
     return { 
       id: companionDoc.id, 
       userId,
@@ -87,10 +89,10 @@ export const storage = {
       createdAt: new Date()
     };
   },
-  
+
   async getCompanionsByUserId(userId: string) {
     const snapshot = await companionsCollection.where("userId", "==", userId).get();
-    
+
     return snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -104,7 +106,7 @@ export const storage = {
       };
     });
   },
-  
+
   // Message CRUD operations
   async createMessage({ userId, content, role, timestamp }: {
     userId: string;
@@ -119,7 +121,7 @@ export const storage = {
       timestamp,
       createdAt: Date.now()
     });
-    
+
     return {
       id: messageDoc.id,
       userId,
@@ -129,13 +131,13 @@ export const storage = {
       createdAt: new Date()
     };
   },
-  
+
   async getMessagesByUserId(userId: string) {
     const snapshot = await messagesCollection
       .where("userId", "==", userId)
       .orderBy("timestamp", "asc")
       .get();
-    
+
     return snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -147,5 +149,10 @@ export const storage = {
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
       };
     });
+  },
+
+  async getPreferences(userId: string) {
+    const prefs = await db.select().from(companions).where(eq(companions.userId, userId));
+    return prefs[0];
   }
 };

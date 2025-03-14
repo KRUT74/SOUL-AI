@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getDownloadURL, ref } from "firebase/storage"; // Added import for getDownloadURL and ref
 import { credential } from "firebase-admin";
 import admin from "firebase-admin";
 
@@ -49,5 +50,19 @@ export const firestore = getFirestore(app);
 export const storage = getStorage(app);
 export const adminAuth = admin.auth();
 export const adminFirestore = admin.firestore();
+
+// Added getPreferences function -  This is a placeholder, replace with your actual implementation
+export async function getPreferences(userId) {
+  try {
+    const storageRef = ref(storage, `users/${userId}/preferences.json`);
+    const url = await getDownloadURL(storageRef);
+    const response = await fetch(url);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching preferences:", error);
+    return null; // Or handle the error appropriately
+  }
+}
+
 
 export default app;
