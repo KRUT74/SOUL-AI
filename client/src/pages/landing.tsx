@@ -42,9 +42,9 @@ export default function Landing() {
           SOULMATE AI
         </h1>
         <Link href="/auth">
-          <a className="bg-white/20 hover:bg-white/30 text-white px-8 py-4 text-xl rounded-lg cursor-pointer">
+          <button className="bg-white/20 hover:bg-white/30 text-white px-8 py-4 text-xl rounded-lg cursor-pointer">
             Get Started
-          </a>
+          </button>
         </Link>
       </div>
     </div>
