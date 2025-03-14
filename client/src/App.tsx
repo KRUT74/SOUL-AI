@@ -14,7 +14,12 @@ import { ProtectedRoute } from "@/lib/protected-route";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/">
+        {() => {
+          console.log("Redirecting from root to home");
+          return <Redirect to="/home" />;
+        }}
+      </Route>
       <Route path="/auth" component={Auth} />
       <ProtectedRoute path="/home" component={Home} />
       <ProtectedRoute path="/chat" component={Chat} />
